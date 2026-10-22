@@ -1,0 +1,194 @@
+.app-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.topbar,
+.hero-panel,
+.panel {
+  background: #ffffff;
+  border: 1px solid #dfeaf3;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 2vw, 2.4rem);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.primary-button,
+.confirm-button,
+.clinic-search button {
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-button {
+  padding: 0.8rem 1.2rem;
+}
+
+.hero-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 26px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #f8fbff, #edf4ff);
+}
+
+.hero-panel h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 2vw, 2.5rem);
+}
+
+.status-pill {
+  background: #e0f2fe;
+  color: #075985;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.content-grid,
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+}
+
+.bottom-grid {
+  margin-top: 20px;
+}
+
+.panel {
+  padding: 20px 22px;
+}
+
+.panel-header {
+  margin-bottom: 16px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.clinic-search {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.clinic-search input {
+  flex: 1;
+  border: 1px solid #d8e4f0;
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+}
+
+.clinic-search button,
+.confirm-button {
+  padding: 0.8rem 1.25rem;
+}
+
+.clinic-list {
+  display: grid;
+  gap: 12px;
+}
+
+.clinic-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #dfeaf3;
+  background: #f8fbff;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.clinic-card.selected {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.clinic-card h4,
+.booking-card h4 {
+  margin: 0 0 4px;
+}
+
+.clinic-card p,
+.booking-card li,
+.feature-list li {
+  margin: 0;
+  color: #475569;
+}
+
+.clinic-card span {
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.booking-card ul,
+.feature-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 8px;
+}
+
+.label {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.confirm-button {
+  margin-top: 16px;
+  width: 100%;
+}
+
+@media (max-width: 820px) {
+  .content-grid,
+  .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar,
+  .hero-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+}
