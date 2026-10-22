@@ -8,8 +8,8 @@ You do not need to install coding tools on your own computer. Use GitHub Codespa
 
 ### Start the app in Codespaces
 
-1. Open this repository on GitHub. Select the green **Code** button, then the **Codespaces** tab.
-2. Select **Create codespace on main**. If your team lead has asked you to use a different branch, choose that branch instead.
+1. [Create your own Codespace on `main`](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main). If your team lead has asked you to use a different branch, choose that branch instead.
+2. Alternatively, open this repository on GitHub, select the green **Code** button, then the **Codespaces** tab and select **Create codespace on main**.
 3. Wait for the Codespace to finish setting up. It installs the frontend dependencies for you.
 4. In VS Code, open **Terminal → New Terminal**. A terminal is where you type commands for the project.
 5. Copy and run:

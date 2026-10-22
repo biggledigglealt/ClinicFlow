@@ -5,7 +5,7 @@ This guide is for teammates who are new to coding or GitHub. You can do the setu
 ## 1. Get access and open the project
 
 1. Ask the team lead to confirm that your GitHub account has access to the ClinicFlow repository.
-2. Open the repository on GitHub and select **Code → Codespaces → Create codespace on main**. If the team is already working on a different branch, ask which branch to use.
+2. [Create your own Codespace on `main`](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main). Alternatively, open the repository on GitHub and select **Code → Codespaces → Create codespace on main**. If the team is already working on a different branch, ask which branch to use.
 3. Wait for setup to finish. The first setup may take a few minutes while the frontend packages install.
 4. You are now in VS Code in your browser. The file list is on the left. Select **Terminal → New Terminal** to open the command area at the bottom.
 
