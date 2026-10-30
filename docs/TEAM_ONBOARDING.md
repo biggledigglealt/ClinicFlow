@@ -58,6 +58,8 @@ Set `frontend/.env.local` from the local API URL and publishable key shown by `n
 
 Local `db:reset` removes locally created Auth users and database records before applying migrations and the synthetic clinics in `supabase/seed.sql`. Use `db:test` when you only need to rerun the access-control tests without resetting local accounts.
 
+Test local verification through the frontend signup form. Adding a user from Studio's Users page is administrative provisioning and may bypass the signup verification flow. Local email confirmations are captured in Mailpit at `http://127.0.0.1:54324`; they are not sent to real inboxes. The signup screen includes a resend action. The hosted Supabase project needs email confirmation enabled, appropriate redirect URLs, and SMTP configured for real delivery.
+
 ## 5. Keep logs useful and private
 
 The logging goal is to accurately record important administrative actions. A useful event can include a timestamp, action name, non-sensitive actor identifier, opaque record identifier, and success/failure outcome. Keep the details minimal. Never log passwords, access tokens, patient names, dates of birth, contact information, or entire request bodies. Test with synthetic data only.

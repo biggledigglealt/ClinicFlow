@@ -10,3 +10,18 @@ if (!supabaseUrl || !supabasePublishableKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabasePublishableKey)
+
+export function getLocalEmailPreviewUrl() {
+  const apiUrl = new URL(supabaseUrl)
+
+  if (apiUrl.hostname === 'localhost' || apiUrl.hostname === '127.0.0.1') {
+    return `${apiUrl.protocol}//${apiUrl.hostname}:54324`
+  }
+
+  const codespaceHost = apiUrl.hostname.match(/^(.*)-54321(\.app\.github\.dev)$/)
+  if (codespaceHost) {
+    return `https://${codespaceHost[1]}-54324${codespaceHost[2]}`
+  }
+
+  return null
+}

@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { login, logout, register } from './lib/auth'
-import { supabase } from './lib/supabase'
+import { login, logout, register, resendSignupVerification } from './lib/auth'
+import { getLocalEmailPreviewUrl, supabase } from './lib/supabase'
 import { PatientProfilePanel } from './components/PatientProfilePanel'
 import { ClinicFinder } from './features/clinics/ClinicFinder'
 import type { Clinic } from './services/clinicService'
 import './App.css'
+
+const localEmailPreviewUrl = getLocalEmailPreviewUrl()
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -16,6 +18,9 @@ function App() {
   const [authError, setAuthError] = useState('')
   const [authMessage, setAuthMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [verificationEmail, setVerificationEmail] = useState('')
+  const [canResendVerification, setCanResendVerification] = useState(false)
+  const [isResendingVerification, setIsResendingVerification] = useState(false)
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null)
 
   useEffect(() => {
@@ -30,32 +35,56 @@ function App() {
     event.preventDefault()
     setAuthError('')
     setAuthMessage('')
+    setCanResendVerification(false)
+    setVerificationEmail('')
     setIsSubmitting(true)
 
     try {
       if (authMode === 'login') {
-        await login(email, password)
+        await login(email.trim(), password)
         setAuthMessage('You are signed in.')
         setShowAuth(false)
       } else {
-        const { user: createdUser, session } = await register(email, password)
+        const signupEmail = email.trim()
+        const { user: createdUser, session } = await register(signupEmail, password)
 
         if (session) {
           setUser(createdUser)
           setAuthMessage('Your account is ready.')
           setShowAuth(false)
         } else {
-          setAuthMessage(
-            'Account created. Check your email for a confirmation link before signing in.',
-          )
+          setVerificationEmail(signupEmail)
+          setCanResendVerification(true)
+          setAuthMessage(`A verification link was sent to ${signupEmail}. Confirm your email before logging in.`)
         }
       }
     } catch (error) {
-      setAuthError(
-        error instanceof Error ? error.message : 'Could not complete authentication.',
-      )
+      const message = error instanceof Error ? error.message : 'Could not complete authentication.'
+      setAuthError(message)
+      if (authMode === 'login' && message.toLowerCase().includes('email not confirmed')) {
+        setVerificationEmail(email.trim())
+        setCanResendVerification(true)
+      }
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!verificationEmail) return
+
+    setAuthError('')
+    setAuthMessage('')
+    setIsResendingVerification(true)
+    try {
+      await resendSignupVerification(verificationEmail)
+      setAuthMessage(
+        `If ${verificationEmail} still needs verification, a new link has been sent.`,
+      )
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Could not resend the verification email.')
+    } finally {
+      setIsResendingVerification(false)
     }
   }
 
@@ -140,6 +169,24 @@ function App() {
             {authError && <p className="auth-error" role="alert">{authError}</p>}
             {authMessage && <p className="auth-message" role="status">{authMessage}</p>}
 
+            {canResendVerification && (
+              <div className="verification-actions">
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={handleResendVerification}
+                  disabled={isResendingVerification}
+                >
+                  {isResendingVerification ? 'Sending…' : 'Resend verification email'}
+                </button>
+                {localEmailPreviewUrl && (
+                  <a href={localEmailPreviewUrl} target="_blank" rel="noreferrer">
+                    Open local email inbox
+                  </a>
+                )}
+              </div>
+            )}
+
             <button type="submit" className="primary-button" disabled={isSubmitting}>
               {isSubmitting
                 ? 'Please wait…'
@@ -158,6 +205,8 @@ function App() {
                 setAuthMode((mode) => mode === 'login' ? 'signup' : 'login')
                 setAuthError('')
                 setAuthMessage('')
+                setCanResendVerification(false)
+                setVerificationEmail('')
               }}
             >
               {authMode === 'login' ? 'Create an account' : 'Log in'}

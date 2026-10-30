@@ -70,6 +70,8 @@ Copy `frontend/.env.example` to `frontend/.env.local` and set the local API URL 
 
 `npm run db:reset` recreates the local database and removes locally created Auth users and data. It then loads synthetic clinic records from `supabase/seed.sql`.
 
+Email confirmation is enabled in local Auth. Test it through the frontend signup form; creating a user from Studio's Users page is administrative provisioning and may bypass signup verification. Local confirmation messages are captured by Mailpit at `http://127.0.0.1:54324`; local email is not delivered to external inboxes. The signup screen provides a resend action. For the hosted project, enable email confirmation, set the allowed Auth redirect URLs, and configure an SMTP provider before expecting real verification emails.
+
 The checked-in migration is in `supabase/migrations/`. It has not been applied to the hosted project. Hosted Auth redirect URLs, email confirmation, project linking, and migration deployment must be configured separately after team review.
 ### Logging and privacy goals
 

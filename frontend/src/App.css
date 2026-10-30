@@ -175,6 +175,19 @@
   color: #475569;
 }
 
+.verification-actions {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  color: #475569;
+}
+
+.verification-actions a {
+  color: #1d4ed8;
+  font-weight: 600;
+  text-underline-offset: 2px;
+}
+
 .text-button {
   border: 0;
   padding: 0;
@@ -184,6 +197,11 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
+}
+
+.text-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .hero-panel {
