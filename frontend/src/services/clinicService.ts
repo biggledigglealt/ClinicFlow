@@ -8,12 +8,13 @@ export interface Clinic {
   province: string | null
   phone: string | null
   description: string | null
+  time_zone: string
 }
 
 export async function listActiveClinics(city = '') {
   let request = supabase
     .from('clinics')
-    .select('id, name, address, city, province, phone, description')
+    .select('id, name, address, city, province, phone, description, time_zone')
     .eq('is_active', true)
     .order('name', { ascending: true })
 

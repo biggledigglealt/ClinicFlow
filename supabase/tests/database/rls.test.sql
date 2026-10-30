@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(19);
 
 insert into auth.users (
     id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -45,6 +45,22 @@ values
     ('50000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', 'admin'),
     ('50000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000002', '30000000-0000-4000-8000-000000000002', 'staff');
 
+insert into public.clinic_hours (clinic_id, day_of_week, opens_at, closes_at)
+select
+    '40000000-0000-4000-8000-000000000001',
+    extract(dow from test_date)::smallint,
+    '09:00',
+    '17:00'
+from (select (now() at time zone 'America/Toronto')::date + 7 as test_date) schedule;
+
+insert into public.staff_hours (membership_id, day_of_week, opens_at, closes_at)
+select
+    '50000000-0000-4000-8000-000000000001',
+    extract(dow from test_date)::smallint,
+    '09:00',
+    '17:00'
+from (select (now() at time zone 'America/Toronto')::date + 7 as test_date) schedule;
+
 insert into public.appointments (id, patient_id, staff_id, clinic_id, start_at, end_at)
 values
     ('60000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', now() + interval '1 day', now() + interval '1 day 30 minutes'),
@@ -79,6 +95,39 @@ select is((select count(*)::int from public.profiles), 1, 'patient sees only own
 select is((select count(*)::int from public.appointments), 1, 'patient sees own appointment');
 select is((select count(*)::int from public.patient_profiles), 1, 'patient sees only own patient profile');
 select is((select count(*)::int from public.notifications), 1, 'patient sees only own notifications');
+select is(
+    (select count(*)::int from public.available_appointment_slots(
+        '40000000-0000-4000-8000-000000000001',
+        (now() at time zone 'America/Toronto')::date + 7
+    )),
+    16,
+    'availability returns the scheduled 30-minute slots'
+);
+select lives_ok(
+    $$select public.book_appointment(
+        '40000000-0000-4000-8000-000000000001',
+        '30000000-0000-4000-8000-000000000001',
+        (((now() at time zone 'America/Toronto')::date + 7) + time '09:00') at time zone 'America/Toronto'
+    )$$,
+    'patient can book an available appointment slot'
+);
+select throws_ok(
+    $$select public.book_appointment(
+        '40000000-0000-4000-8000-000000000001',
+        '30000000-0000-4000-8000-000000000001',
+        (((now() at time zone 'America/Toronto')::date + 7) + time '09:00') at time zone 'America/Toronto'
+    )$$,
+    'P0001',
+    'That appointment time is no longer available. Refresh availability and try again.',
+    'patient cannot book an already occupied slot'
+);
+select throws_ok(
+    $$insert into public.appointments (patient_id, staff_id, clinic_id, start_at, end_at)
+      values ('20000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', now() + interval '10 days', now() + interval '10 days 30 minutes')$$,
+    '42501',
+    null,
+    'patient cannot bypass the booking RPC with a direct insert'
+);
 select throws_ok(
     $$update public.profiles set global_role = 'platform_admin' where id = auth.uid()$$,
     '42501',
@@ -103,7 +152,7 @@ select lives_ok(
 
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000003', true);
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000003","role":"authenticated"}', true);
-select is((select count(*)::int from public.appointments), 1, 'clinic staff sees appointments at own clinic');
+select is((select count(*)::int from public.appointments), 2, 'clinic staff sees appointments at own clinic');
 select is((select count(*)::int from public.patient_profiles), 1, 'clinic staff sees patient profile tied to own clinic appointment');
 select is((select count(*)::int from public.audit_logs), 0, 'clinic staff cannot read platform audit logs');
 

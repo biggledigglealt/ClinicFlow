@@ -3,9 +3,10 @@ import { getPatientProfile, savePatientProfile, type PatientProfile } from '../s
 
 interface PatientProfilePanelProps {
   userId: string
+  onProfileReady: (ready: boolean) => void
 }
 
-export function PatientProfilePanel({ userId }: PatientProfilePanelProps) {
+export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePanelProps) {
   const [profile, setProfile] = useState<PatientProfile | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -25,9 +26,11 @@ export function PatientProfilePanel({ userId }: PatientProfilePanelProps) {
         setFirstName(currentProfile?.first_name ?? '')
         setLastName(currentProfile?.last_name ?? '')
         setPhone(currentProfile?.phone ?? '')
+        onProfileReady(Boolean(currentProfile))
       })
       .catch((loadError: unknown) => {
         if (isCurrent) {
+          onProfileReady(false)
           setError(loadError instanceof Error ? loadError.message : 'Could not load your profile.')
         }
       })
@@ -38,7 +41,7 @@ export function PatientProfilePanel({ userId }: PatientProfilePanelProps) {
     return () => {
       isCurrent = false
     }
-  }, [userId])
+  }, [userId, onProfileReady])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -56,6 +59,7 @@ export function PatientProfilePanel({ userId }: PatientProfilePanelProps) {
       setFirstName(savedProfile.first_name)
       setLastName(savedProfile.last_name)
       setPhone(savedProfile.phone ?? '')
+      onProfileReady(true)
       setMessage('Your booking profile is saved.')
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save your profile.')

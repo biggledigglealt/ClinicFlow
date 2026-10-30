@@ -60,6 +60,7 @@ Docker is required to run the local Supabase services. Then use:
 
 ```sh
 npm run db:start
+npm run db:migrate
 npm run db:reset
 npm run db:test
 ```
@@ -68,7 +69,7 @@ In Windows PowerShell, use `npm.cmd` for these commands (for example, `npm.cmd r
 
 Copy `frontend/.env.example` to `frontend/.env.local` and set the local API URL and publishable key printed by `npm run db:start`. In Codespaces, use the forwarded URL for port `54321` instead of `localhost`; the frontend auth redirect uses the forwarded port `5173`. `.env.local` is ignored by Git. Stop local services with `npm run db:stop`.
 
-`npm run db:reset` recreates the local database and removes locally created Auth users and data. It then loads synthetic clinic records from `supabase/seed.sql`.
+Use `npm run db:migrate` to apply new schema changes while preserving local accounts and data. `npm run db:reset` recreates the local database, removes locally created Auth users and data, then loads synthetic clinic, provider, and schedule records from `supabase/seed.sql`.
 
 Email confirmation is enabled in local Auth. Test it through the frontend signup form; creating a user from Studio's Users page is administrative provisioning and may bypass signup verification. Local confirmation messages are captured by Mailpit at `http://127.0.0.1:54324`; local email is not delivered to external inboxes. The signup screen provides a resend action. For the hosted project, enable email confirmation, set the allowed Auth redirect URLs, and configure an SMTP provider before expecting real verification emails.
 
@@ -129,7 +130,7 @@ npm --prefix frontend run build
 
 ## What is implemented today?
 
-The frontend is a runnable React/TypeScript/Vite prototype connected to local Supabase Auth and PostgreSQL. Login, signup, logout, patient profile onboarding, and active clinic search are connected through frontend services. Local clinic seed records are synthetic. Appointment availability and booking, staff provisioning and schedules, cancellation/rescheduling, and notification delivery remain to be implemented. Accessibility and notification panels still contain illustrative content. The migration has not been applied to the hosted project. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
+The frontend is a runnable React/TypeScript/Vite prototype connected to local Supabase Auth and PostgreSQL. Login, signup, logout, patient profile onboarding, active clinic search, 30-minute appointment availability, and transactional booking are connected through frontend services and database functions. Local clinic, provider, and schedule seed records are synthetic. Staff provisioning UI, cancellation/rescheduling, and notification delivery remain to be implemented. Accessibility and notification panels still contain illustrative content. The migration has not been applied to the hosted project. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
 
 ## Privacy and project scope
 

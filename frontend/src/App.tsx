@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import { login, logout, register, resendSignupVerification } from './lib/auth'
 import { getLocalEmailPreviewUrl, supabase } from './lib/supabase'
 import { PatientProfilePanel } from './components/PatientProfilePanel'
+import { AppointmentBookingPanel } from './features/appointments/AppointmentBookingPanel'
 import { ClinicFinder } from './features/clinics/ClinicFinder'
 import type { Clinic } from './services/clinicService'
 import './App.css'
@@ -22,10 +23,14 @@ function App() {
   const [canResendVerification, setCanResendVerification] = useState(false)
   const [isResendingVerification, setIsResendingVerification] = useState(false)
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null)
+  const [hasPatientProfile, setHasPatientProfile] = useState(false)
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null),
+      (_event, session) => {
+        setUser(session?.user ?? null)
+        if (!session) setHasPatientProfile(false)
+      },
     )
 
     return () => subscription.unsubscribe()
@@ -218,7 +223,13 @@ function App() {
       {authMessage && !showAuth && <p className="auth-message" role="status">{authMessage}</p>}
       {authError && !showAuth && <p className="auth-error" role="alert">{authError}</p>}
 
-      {user && <PatientProfilePanel key={user.id} userId={user.id} />}
+      {user && (
+        <PatientProfilePanel
+          key={user.id}
+          userId={user.id}
+          onProfileReady={setHasPatientProfile}
+        />
+      )}
 
       <section className="hero-panel">
         <div>
@@ -233,28 +244,12 @@ function App() {
           selectedClinicId={selectedClinic?.id ?? null}
           onSelectClinic={setSelectedClinic}
         />
-
-        <aside className="panel">
-          <div className="panel-header">
-            <h3>Appointment booking</h3>
-          </div>
-          {selectedClinic ? (
-            <div className="booking-card">
-              <p className="label">Selected clinic</p>
-              <h4>{selectedClinic.name}</h4>
-              <p className="section-description">
-                Provider schedules and available appointment times will appear here once the booking workflow is connected.
-              </p>
-              <button type="button" className="confirm-button" disabled>
-                Appointment booking is coming next
-              </button>
-            </div>
-          ) : (
-            <p className="section-description">
-              Select a clinic to continue. Appointment times will be added after clinic staff schedules are connected.
-            </p>
-          )}
-        </aside>
+        <AppointmentBookingPanel
+          key={`${user?.id ?? 'guest'}:${selectedClinic?.id ?? 'no-clinic'}`}
+          clinic={selectedClinic}
+          userId={user?.id ?? null}
+          hasPatientProfile={hasPatientProfile}
+        />
       </main>
 
       <section className="bottom-grid">

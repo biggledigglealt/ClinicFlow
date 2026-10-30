@@ -324,6 +324,78 @@
   background: #1d4ed8;
 }
 
+.availability-search {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+
+.availability-search label {
+  color: #334155;
+  font-weight: 600;
+}
+
+.availability-search input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.appointment-slots,
+.upcoming-appointments {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.appointment-slots h4,
+.upcoming-appointments h4 {
+  margin: 0;
+}
+
+.appointment-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #dfeaf3;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fbff;
+}
+
+.appointment-slot p {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.upcoming-appointments {
+  border-top: 1px solid #dfeaf3;
+  padding-top: 16px;
+}
+
+.upcoming-appointments ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.upcoming-appointments li {
+  display: grid;
+  gap: 3px;
+  color: #475569;
+}
+
+.upcoming-appointments li strong {
+  color: #0f172a;
+}
+
 .clinic-card span {
   background: #dcfce7;
   color: #166534;

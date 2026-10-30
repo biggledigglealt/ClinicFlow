@@ -21,7 +21,7 @@ npm --prefix frontend run dev -- --host 0.0.0.0
 
 This starts the local development server. Codespaces forwards port `5173`; select **Open in Browser** next to that port to see the app. Leave the command running while you work. When you want to stop the server, click its terminal and press `Ctrl+C`.
 
-When you edit and save frontend code, Vite normally refreshes the preview automatically. The current app is a prototype: its sample content is not connected to a working database or booking API.
+When you edit and save frontend code, Vite normally refreshes the preview automatically. Login, profile onboarding, clinic search, availability, and booking use the local Supabase stack; accessibility and notification panels are still illustrative.
 
 ## 3. Find your task
 
@@ -48,6 +48,7 @@ For local database work, install the root CLI and frontend packages, then run th
 npm ci
 npm ci --prefix frontend
 npm run db:start
+npm run db:migrate
 npm run db:reset
 npm run db:test
 ```
@@ -56,7 +57,7 @@ In Windows PowerShell, run these as `npm.cmd` commands (for example, `npm.cmd ru
 
 Set `frontend/.env.local` from the local API URL and publishable key shown by `npm run db:start`. In Codespaces, use the forwarded HTTPS URL for port `54321`, and use the forwarded frontend URL for auth redirects. Stop local services with `npm run db:stop`. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
 
-Local `db:reset` removes locally created Auth users and database records before applying migrations and the synthetic clinics in `supabase/seed.sql`. Use `db:test` when you only need to rerun the access-control tests without resetting local accounts.
+Use `db:migrate` to apply pending migrations without resetting local accounts. `db:reset` removes locally created Auth users and database records before applying migrations and synthetic clinic, provider, and schedule records from `supabase/seed.sql`. Use `db:test` to rerun database checks without resetting local accounts.
 
 Test local verification through the frontend signup form. Adding a user from Studio's Users page is administrative provisioning and may bypass the signup verification flow. Local email confirmations are captured in Mailpit at `http://127.0.0.1:54324`; they are not sent to real inboxes. The signup screen includes a resend action. The hosted Supabase project needs email confirmation enabled, appropriate redirect URLs, and SMTP configured for real delivery.
 
@@ -116,4 +117,4 @@ All three should finish successfully before review. If one fails, read the error
 
 ## Current project status
 
-The frontend has Supabase Auth login/signup/logout, patient profile onboarding, and a live clinic finder against the configured Supabase database. Appointment booking, staff provisioning and schedules, cancellation/rescheduling, and notification delivery are not connected yet. Accessibility and notification panels still show illustrative content. `backend/` contains legacy prototype modules and tests; the hosted Supabase project has not been linked or migrated.
+The frontend has Supabase Auth login/signup/logout, patient profile onboarding, live clinic search, and 30-minute appointment availability/booking against the configured Supabase database. Local provider schedules are synthetic seed data; staff provisioning UI, cancellation/rescheduling, and notification delivery are not connected yet. Accessibility and notification panels still show illustrative content. `backend/` contains legacy prototype modules and tests; the hosted Supabase project has not been linked or migrated.
