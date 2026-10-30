@@ -1,6 +1,76 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import type { User } from '@supabase/supabase-js'
+import { login, logout, register } from './lib/auth'
+import { supabase } from './lib/supabase'
+import { PatientProfilePanel } from './components/PatientProfilePanel'
+import { ClinicFinder } from './features/clinics/ClinicFinder'
+import type { Clinic } from './services/clinicService'
 import './App.css'
 
 function App() {
+  const [user, setUser] = useState<User | null>(null)
+  const [showAuth, setShowAuth] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [authMessage, setAuthMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null)
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => setUser(session?.user ?? null),
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setAuthError('')
+    setAuthMessage('')
+    setIsSubmitting(true)
+
+    try {
+      if (authMode === 'login') {
+        await login(email, password)
+        setAuthMessage('You are signed in.')
+        setShowAuth(false)
+      } else {
+        const { user: createdUser, session } = await register(email, password)
+
+        if (session) {
+          setUser(createdUser)
+          setAuthMessage('Your account is ready.')
+          setShowAuth(false)
+        } else {
+          setAuthMessage(
+            'Account created. Check your email for a confirmation link before signing in.',
+          )
+        }
+      }
+    } catch (error) {
+      setAuthError(
+        error instanceof Error ? error.message : 'Could not complete authentication.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleLogout() {
+    setAuthError('')
+    setAuthMessage('')
+
+    try {
+      await logout()
+      setAuthMessage('You are signed out.')
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Could not sign out.')
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -8,10 +78,98 @@ function App() {
           <p className="eyebrow">ClinicFlow</p>
           <h1>Appointment & clinic access</h1>
         </div>
-        <button type="button" className="primary-button">
-          Log in
-        </button>
+        {user ? (
+          <div className="account-actions">
+            <span className="signed-in-label">Signed in: {user.email}</span>
+            <button type="button" className="primary-button" onClick={handleLogout}>
+              Log out
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => {
+              setShowAuth((isOpen) => !isOpen)
+              setAuthError('')
+              setAuthMessage('')
+            }}
+            aria-expanded={showAuth}
+            aria-controls="auth-panel"
+          >
+            {showAuth ? 'Close' : 'Log in'}
+          </button>
+        )}
       </header>
+
+      {showAuth && !user && (
+        <section className="panel auth-panel" id="auth-panel" aria-labelledby="auth-title">
+          <div className="panel-header">
+            <h3 id="auth-title">{authMode === 'login' ? 'Log in' : 'Create an account'}</h3>
+          </div>
+
+          <form className="auth-form" onSubmit={handleAuthSubmit}>
+            <label>
+              Email
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                name="password"
+                autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                minLength={authMode === 'signup' ? 12 : undefined}
+                required
+              />
+              {authMode === 'signup' && (
+                <span className="input-hint">Use at least 12 characters.</span>
+              )}
+            </label>
+
+            {authError && <p className="auth-error" role="alert">{authError}</p>}
+            {authMessage && <p className="auth-message" role="status">{authMessage}</p>}
+
+            <button type="submit" className="primary-button" disabled={isSubmitting}>
+              {isSubmitting
+                ? 'Please wait…'
+                : authMode === 'login'
+                  ? 'Log in'
+                  : 'Create account'}
+            </button>
+          </form>
+
+          <p className="auth-mode-switch">
+            {authMode === 'login' ? 'New to ClinicFlow?' : 'Already have an account?'}{' '}
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                setAuthMode((mode) => mode === 'login' ? 'signup' : 'login')
+                setAuthError('')
+                setAuthMessage('')
+              }}
+            >
+              {authMode === 'login' ? 'Create an account' : 'Log in'}
+            </button>
+          </p>
+        </section>
+      )}
+
+      {authMessage && !showAuth && <p className="auth-message" role="status">{authMessage}</p>}
+      {authError && !showAuth && <p className="auth-error" role="alert">{authError}</p>}
+
+      {user && <PatientProfilePanel key={user.id} userId={user.id} />}
 
       <section className="hero-panel">
         <div>
@@ -22,52 +180,31 @@ function App() {
       </section>
 
       <main className="content-grid">
-        <section className="panel">
-          <div className="panel-header">
-            <h3>Find clinic</h3>
-          </div>
-
-          <div className="clinic-search">
-            <input type="text" value="Ottawa" readOnly aria-label="Search clinic" />
-            <button type="button">Search</button>
-          </div>
-
-          <div className="clinic-list">
-            <article className="clinic-card selected">
-              <div>
-                <h4>East Ottawa Health Hub</h4>
-                <p>1.4 km away • Accepting new patients</p>
-              </div>
-              <span>Open</span>
-            </article>
-
-            <article className="clinic-card">
-              <div>
-                <h4>Downtown Family Clinic</h4>
-                <p>3.2 km away • 2 openings this week</p>
-              </div>
-              <span>Book</span>
-            </article>
-          </div>
-        </section>
+        <ClinicFinder
+          selectedClinicId={selectedClinic?.id ?? null}
+          onSelectClinic={setSelectedClinic}
+        />
 
         <aside className="panel">
           <div className="panel-header">
-            <h3>Book appointment</h3>
+            <h3>Appointment booking</h3>
           </div>
-
-          <div className="booking-card">
-            <p className="label">Selected time</p>
-            <h4>Tue, Jun 6 • 10:30 AM</h4>
-            <ul>
-              <li>Provider: Dr. Chen</li>
-              <li>Location: East Ottawa Health Hub</li>
-              <li>Type: New patient intake</li>
-            </ul>
-            <button type="button" className="confirm-button">
-              Confirm booking
-            </button>
-          </div>
+          {selectedClinic ? (
+            <div className="booking-card">
+              <p className="label">Selected clinic</p>
+              <h4>{selectedClinic.name}</h4>
+              <p className="section-description">
+                Provider schedules and available appointment times will appear here once the booking workflow is connected.
+              </p>
+              <button type="button" className="confirm-button" disabled>
+                Appointment booking is coming next
+              </button>
+            </div>
+          ) : (
+            <p className="section-description">
+              Select a clinic to continue. Appointment times will be added after clinic staff schedules are connected.
+            </p>
+          )}
         </aside>
       </main>
 

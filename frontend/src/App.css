@@ -50,6 +50,142 @@
   padding: 0.8rem 1.2rem;
 }
 
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.signed-in-label {
+  color: #475569;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.auth-panel {
+  max-width: 560px;
+  margin: 0 auto 20px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.auth-form input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.profile-panel {
+  margin-bottom: 20px;
+}
+
+.section-description {
+  margin: 0 0 16px;
+  color: #475569;
+}
+
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.profile-form label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.profile-form input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.profile-form button,
+.profile-form .auth-error,
+.profile-form .auth-message {
+  grid-column: 1 / -1;
+}
+
+.profile-form input:focus-visible,
+.clinic-search input:focus-visible,
+.clinic-select-button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.auth-form input:focus-visible,
+.text-button:focus-visible,
+.primary-button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.input-hint {
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.auth-message,
+.auth-error {
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  margin: 0 0 16px;
+}
+
+.auth-message {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.auth-error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.auth-mode-switch {
+  margin: 16px 0 0;
+  color: #475569;
+}
+
+.text-button {
+  border: 0;
+  padding: 0;
+  color: #1d4ed8;
+  background: transparent;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
 .hero-panel {
   display: flex;
   justify-content: space-between;
@@ -148,6 +284,28 @@
   color: #475569;
 }
 
+.clinic-details {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.clinic-select-button {
+  flex: 0 0 auto;
+  border: 1px solid #2563eb;
+  border-radius: 999px;
+  padding: 0.6rem 0.9rem;
+  color: #1d4ed8;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clinic-select-button[aria-pressed='true'] {
+  color: #fff;
+  background: #1d4ed8;
+}
+
 .clinic-card span {
   background: #dcfce7;
   color: #166534;
@@ -190,5 +348,15 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 14px;
+  }
+
+  .account-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .profile-form {
+    grid-template-columns: 1fr;
   }
 }

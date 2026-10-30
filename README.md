@@ -64,7 +64,11 @@ npm run db:reset
 npm run db:test
 ```
 
+In Windows PowerShell, use `npm.cmd` for these commands (for example, `npm.cmd run db:start`).
+
 Copy `frontend/.env.example` to `frontend/.env.local` and set the local API URL and publishable key printed by `npm run db:start`. In Codespaces, use the forwarded URL for port `54321` instead of `localhost`; the frontend auth redirect uses the forwarded port `5173`. `.env.local` is ignored by Git. Stop local services with `npm run db:stop`.
+
+`npm run db:reset` recreates the local database and removes locally created Auth users and data. It then loads synthetic clinic records from `supabase/seed.sql`.
 
 The checked-in migration is in `supabase/migrations/`. It has not been applied to the hosted project. Hosted Auth redirect URLs, email confirmation, project linking, and migration deployment must be configured separately after team review.
 ### Logging and privacy goals
@@ -123,7 +127,7 @@ npm --prefix frontend run build
 
 ## What is implemented today?
 
-The frontend is a runnable React/TypeScript/Vite prototype with a Supabase client and basic Auth helpers. A Supabase migration, RLS policies, signup profile trigger, local CLI config, and synthetic database access tests are version-controlled. The migration has not been applied to the hosted project, and the current UI remains static sample content. Booking/cancellation RPCs, notification delivery, service-layer integration, and clinic finder/calendar workflows remain to be implemented. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
+The frontend is a runnable React/TypeScript/Vite prototype connected to local Supabase Auth and PostgreSQL. Login, signup, logout, patient profile onboarding, and active clinic search are connected through frontend services. Local clinic seed records are synthetic. Appointment availability and booking, staff provisioning and schedules, cancellation/rescheduling, and notification delivery remain to be implemented. Accessibility and notification panels still contain illustrative content. The migration has not been applied to the hosted project. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
 
 ## Privacy and project scope
 

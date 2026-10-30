@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(15);
 
 insert into auth.users (
     id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -11,7 +11,8 @@ values
     ('10000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'patient-a@example.test', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
     ('10000000-0000-4000-8000-000000000002', 'authenticated', 'authenticated', 'patient-b@example.test', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
     ('10000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'staff-a@example.test', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
-    ('10000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'staff-b@example.test', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now());
+    ('10000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'staff-b@example.test', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
+    ('10000000-0000-4000-8000-000000000005', 'authenticated', 'authenticated', 'patient-new@example.test', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now());
 
 insert into public.patient_profiles (id, user_id, first_name, last_name)
 values
@@ -27,6 +28,17 @@ insert into public.clinics (id, name, address, city, province)
 values
     ('40000000-0000-4000-8000-000000000001', 'Synthetic Clinic A', '1 Test Road', 'Ottawa', 'ON'),
     ('40000000-0000-4000-8000-000000000002', 'Synthetic Clinic B', '2 Test Road', 'Ottawa', 'ON');
+
+set local role anon;
+select is(
+    (select count(*)::int from public.clinics where id in (
+        '40000000-0000-4000-8000-000000000001',
+        '40000000-0000-4000-8000-000000000002'
+    )),
+    2,
+    'anonymous users can read active clinics'
+);
+reset role;
 
 insert into public.clinic_memberships (id, clinic_id, staff_id, role)
 values
@@ -72,6 +84,21 @@ select throws_ok(
     '42501',
     null,
     'patient cannot assign a platform administrator role'
+);
+select throws_ok(
+    $$insert into public.patient_profiles (user_id, first_name, last_name)
+      values ('10000000-0000-4000-8000-000000000002', 'Other', 'Patient')$$,
+    '42501',
+    null,
+    'patient cannot create a profile for another user'
+);
+
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000005', true);
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000005","role":"authenticated"}', true);
+select lives_ok(
+    $$insert into public.patient_profiles (user_id, first_name, last_name)
+      values (auth.uid(), 'Synthetic', 'New Patient')$$,
+    'patient can create their own patient profile'
 );
 
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000003', true);

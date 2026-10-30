@@ -52,7 +52,11 @@ npm run db:reset
 npm run db:test
 ```
 
+In Windows PowerShell, run these as `npm.cmd` commands (for example, `npm.cmd run db:start`).
+
 Set `frontend/.env.local` from the local API URL and publishable key shown by `npm run db:start`. In Codespaces, use the forwarded HTTPS URL for port `54321`, and use the forwarded frontend URL for auth redirects. Stop local services with `npm run db:stop`. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
+
+Local `db:reset` removes locally created Auth users and database records before applying migrations and the synthetic clinics in `supabase/seed.sql`. Use `db:test` when you only need to rerun the access-control tests without resetting local accounts.
 
 ## 5. Keep logs useful and private
 
@@ -110,4 +114,4 @@ All three should finish successfully before review. If one fails, read the error
 
 ## Current project status
 
-The frontend is a runnable React/TypeScript/Vite prototype. `backend/` currently contains prototype schema and authentication helper modules and tests. The repository does not yet have a connected hosted database or application API. Some displayed content is static sample content; it should not be represented as a completed live workflow.
+The frontend has Supabase Auth login/signup/logout, patient profile onboarding, and a live clinic finder against the configured Supabase database. Appointment booking, staff provisioning and schedules, cancellation/rescheduling, and notification delivery are not connected yet. Accessibility and notification panels still show illustrative content. `backend/` contains legacy prototype modules and tests; the hosted Supabase project has not been linked or migrated.
