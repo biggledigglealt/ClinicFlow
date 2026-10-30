@@ -10,7 +10,7 @@ You do not need to install coding tools on your own computer. Use GitHub Codespa
 
 1. [Create your own Codespace on `main`](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main). If your team lead has asked you to use a different branch, choose that branch instead.
 2. Alternatively, open this repository on GitHub, select the green **Code** button, then the **Codespaces** tab and select **Create codespace on main**.
-3. Wait for the Codespace to finish setting up. It installs the frontend dependencies for you.
+3. Wait for the Codespace to finish setting up. It installs the Supabase CLI and frontend dependencies for you.
 4. In VS Code, open **Terminal → New Terminal**. A terminal is where you type commands for the project.
 5. Copy and run:
 
@@ -23,6 +23,7 @@ You do not need to install coding tools on your own computer. Use GitHub Codespa
 If you are not using Codespaces, install Node.js 22.12 or newer and npm first, then run:
 
 ```sh
+npm ci
 npm ci --prefix frontend
 npm --prefix frontend run dev
 ```
@@ -33,21 +34,39 @@ These are the current workstream owners from the team plan. Owners should keep t
 
 | Workstream | Owner(s) | Starting scope |
 | --- | --- | --- |
-| Database and security | Cameron | Compare database options; agree on a data model, access rules, and privacy-safe logging with the team before connecting a service. |
+| Database and security | Cameron | Review the Supabase schema, access rules, and privacy-safe logging with the team before hosted deployment. |
 | Device-adaptive UI | Shyaan and Alex | Make the interface usable on phones, tablets, and desktop screens. |
 | Clinic finder | Juliana | Build the clinic search and clinic selection experience. |
 | Calendar and scheduling | Christopher | Build the calendar and appointment time-selection experience. |
 
 Everyone should review how their feature fits with the others. For example, the clinic finder and calendar both need to agree on how a selected clinic and available appointment times are represented. Ask the team before changing another person's workstream.
 
-### Database decision: compare before choosing
+### Database direction
 
-**The database provider has not been selected or connected yet.** Cameron's workstream is to compare options and bring a recommendation to the team; do not create a paid service or put real data in a cloud database before the team agrees.
+Supabase with PostgreSQL is the current development target. The repository includes a versioned schema, Row Level Security policies, local Supabase CLI configuration, and frontend client/Auth helpers. Review provider fit, cost, privacy, and access rules with the team before applying migrations to a hosted project. Do not use real patient data.
 
-The scheduling data has relationships: an appointment refers to a patient, a clinic, and a staff member. That makes a relational database such as **Supabase Postgres** a sensible option to evaluate first: tables, foreign keys, and database constraints can represent those links. **Firebase Cloud Firestore** is a document database that can be useful for flexible documents and real-time updates, but linked scheduling data may require more deliberate duplication and consistency rules.
+Use Supabase Auth for identity and sessions. Do not create application passwords or custom login tokens. Use synthetic data only.
 
-Compare the actual options against the project requirements, team familiarity, access control, privacy, and current pricing/free-tier limits. Do not rely on broad claims that one database is always faster or better. Whichever provider the team selects, use its supported authentication and access controls; do not store passwords yourself. Use synthetic data only.
+### Local database setup
 
+Install the repository tooling and frontend dependencies:
+
+```sh
+npm ci
+npm ci --prefix frontend
+```
+
+Docker is required to run the local Supabase services. Then use:
+
+```sh
+npm run db:start
+npm run db:reset
+npm run db:test
+```
+
+Copy `frontend/.env.example` to `frontend/.env.local` and set the local API URL and publishable key printed by `npm run db:start`. In Codespaces, use the forwarded URL for port `54321` instead of `localhost`; the frontend auth redirect uses the forwarded port `5173`. `.env.local` is ignored by Git. Stop local services with `npm run db:stop`.
+
+The checked-in migration is in `supabase/migrations/`. It has not been applied to the hosted project. Hosted Auth redirect URLs, email confirmation, project linking, and migration deployment must be configured separately after team review.
 ### Logging and privacy goals
 
 The team wants accurate, useful logs for important administrative actions. As a starting point, record the time, action, non-sensitive actor identifier, affected record identifier, and whether the action succeeded. Keep logs focused: **never log passwords, access tokens, patient names, dates of birth, contact details, or full request contents.** Use fake data while developing and testing.
@@ -100,10 +119,11 @@ npm --prefix frontend run build
 - The test command runs the existing backend prototype tests.
 - The lint command checks frontend code for common issues.
 - The build command checks TypeScript and builds the frontend.
+- The PostgreSQL migration and RLS tests run with `npm run db:start`, `npm run db:reset`, and `npm run db:test`; Docker is required.
 
 ## What is implemented today?
 
-The frontend is a runnable React/TypeScript/Vite prototype. The backend folder currently contains schema and authentication helper modules with tests; a hosted database and a connected application API are **not** set up. The clinic finder, calendar, responsive behavior, logging, and security workstreams still need implementation and team review. A screen or sample value in the prototype is not evidence that a real booking or database connection works.
+The frontend is a runnable React/TypeScript/Vite prototype with a Supabase client and basic Auth helpers. A Supabase migration, RLS policies, signup profile trigger, local CLI config, and synthetic database access tests are version-controlled. The migration has not been applied to the hosted project, and the current UI remains static sample content. Booking/cancellation RPCs, notification delivery, service-layer integration, and clinic finder/calendar workflows remain to be implemented. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
 
 ## Privacy and project scope
 
@@ -115,7 +135,8 @@ The frontend is a runnable React/TypeScript/Vite prototype. The backend folder c
 ## Project folders
 
 - `frontend/` — React, TypeScript, and Vite application.
-- `backend/` — backend prototype modules and tests.
+- `backend/` — legacy prototype modules and tests; PostgreSQL migrations are under `supabase/`.
+- `supabase/` — local CLI configuration, database migrations, and database tests.
 - `tests/` — test planning and validation notes.
 - `docs/` — team onboarding and subsystem notes.
 - `Deliverables/` — project brief and course deliverables.

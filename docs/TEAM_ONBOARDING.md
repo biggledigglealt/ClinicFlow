@@ -6,7 +6,7 @@ This guide is for teammates who are new to coding or GitHub. You can do the setu
 
 1. Ask the team lead to confirm that your GitHub account has access to the ClinicFlow repository.
 2. [Create your own Codespace on `main`](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main). Alternatively, open the repository on GitHub and select **Code → Codespaces → Create codespace on main**. If the team is already working on a different branch, ask which branch to use.
-3. Wait for setup to finish. The first setup may take a few minutes while the frontend packages install.
+3. Wait for setup to finish. The first setup installs the Supabase CLI and frontend packages.
 4. You are now in VS Code in your browser. The file list is on the left. Select **Terminal → New Terminal** to open the command area at the bottom.
 
 If the Codespace reports an error, copy the error text and ask the team for help. Do not paste passwords, tokens, or other secrets into chat or an issue.
@@ -29,27 +29,30 @@ Check with your team before starting if task ownership or the latest assignment 
 
 | Workstream | Owner(s) | First goal |
 | --- | --- | --- |
-| Database and security | Cameron | Compare Supabase Postgres and Firebase Cloud Firestore for the scheduling data; propose an agreed schema, access approach, and privacy-safe audit logging. |
+| Database and security | Cameron | Review the Supabase schema, access approach, and privacy-safe audit logging before hosted deployment. |
 | Device-adaptive UI | Shyaan and Alex | Make existing and new screens work on phone, tablet, and desktop sizes. |
 | Clinic finder | Juliana | Implement the clinic search and selection flow. |
 | Calendar and scheduling | Christopher | Implement calendar navigation and appointment time selection. |
 
 These ownership notes are a starting point, not a reason to work in isolation. Agree on shared data shapes and interfaces before separate features depend on them. Ask before editing another owner's files or changing a shared design.
 
-## 4. Understand the database question
+## 4. Database and Supabase development setup
 
-The database provider is **not selected or connected yet**. Do not create a paid account, upload real information, or treat either provider as approved until the team agrees.
+Supabase with PostgreSQL is the current development target. The repository includes a migration, RLS policies, local CLI configuration, frontend Auth helpers, and synthetic database tests. The team should review provider fit, cost, privacy, and access rules before applying the migration to a hosted project or using real information. Use synthetic records only.
 
-Appointments link to clinics, staff members, and patients. Supabase uses PostgreSQL, a relational database with tables and foreign keys that can express these relationships. Firebase Cloud Firestore stores documents; it can be a good fit for flexible, real-time data, but related scheduling data needs a deliberate plan for duplication and consistency. These are trade-offs to discuss, not a claim that one provider is always faster or better.
+The hosted migration has not been applied. Never put a service-role or secret key in the frontend. The publishable key is public and belongs only in the ignored `frontend/.env.local` file.
 
-Bring the team a short recommendation that compares:
+For local database work, install the root CLI and frontend packages, then run the local Supabase services (Docker required):
 
-- How the appointment-to-clinic/staff/patient relationships will be represented.
-- How authentication and database access will be restricted.
-- What the team can build and maintain with its current experience.
-- Privacy implications and the provider's current pricing/free-tier limits.
+```sh
+npm ci
+npm ci --prefix frontend
+npm run db:start
+npm run db:reset
+npm run db:test
+```
 
-Do not implement your own password storage. If a provider is selected, use its supported authentication and access-control features and keep credentials out of the repository.
+Set `frontend/.env.local` from the local API URL and publishable key shown by `npm run db:start`. In Codespaces, use the forwarded HTTPS URL for port `54321`, and use the forwarded frontend URL for auth redirects. Stop local services with `npm run db:stop`. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
 
 ## 5. Keep logs useful and private
 
