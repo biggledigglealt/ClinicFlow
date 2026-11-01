@@ -21,7 +21,7 @@ npm --prefix frontend run dev -- --host 0.0.0.0
 
 This starts the local development server. Codespaces forwards port `5173`; select **Open in Browser** next to that port to see the app. Leave the command running while you work. When you want to stop the server, click its terminal and press `Ctrl+C`.
 
-When you edit and save frontend code, Vite normally refreshes the preview automatically. Login, profile onboarding, clinic search, availability, and booking use the local Supabase stack; accessibility and notification panels are still illustrative.
+When you edit and save frontend code, Vite normally refreshes the preview automatically. Login, profile editing, clinic search, booking changes, staff operations, accessibility preferences, and in-app notifications connect to the configured Supabase project. Use synthetic data only.
 
 ## 3. Find your task
 
@@ -29,10 +29,10 @@ Check with your team before starting if task ownership or the latest assignment 
 
 | Workstream | Owner(s) | First goal |
 | --- | --- | --- |
-| Database and security | Cameron | Review the Supabase schema, access approach, and privacy-safe audit logging before hosted deployment. |
-| Device-adaptive UI | Shyaan and Alex | Make existing and new screens work on phone, tablet, and desktop sizes. |
-| Clinic finder | Juliana | Implement the clinic search and selection flow. |
-| Calendar and scheduling | Christopher | Implement calendar navigation and appointment time selection. |
+| Database and security | Cameron | Maintain migrations, RLS, booking validation, waitlists, and audit coverage. |
+| Device-adaptive UI | Shyaan and Alex | Test responsive and Capacitor layouts across screen sizes and devices. |
+| Clinic finder | Juliana | Expand and validate clinic search data and the selection flow. |
+| Calendar and scheduling | Christopher | Test patient booking changes and staff schedule/appointment operations. |
 
 These ownership notes are a starting point, not a reason to work in isolation. Agree on shared data shapes and interfaces before separate features depend on them. Ask before editing another owner's files or changing a shared design.
 
@@ -40,7 +40,7 @@ These ownership notes are a starting point, not a reason to work in isolation. A
 
 Supabase with PostgreSQL is the current development target. The repository includes a migration, RLS policies, local CLI configuration, frontend Auth helpers, and synthetic database tests. The team should review provider fit, cost, privacy, and access rules before applying the migration to a hosted project or using real information. Use synthetic records only.
 
-The hosted migration has not been applied. Never put a service-role or secret key in the frontend. The publishable key is public and belongs only in the ignored `frontend/.env.local` file.
+A terminal transcript in the in-progress deliverable reports a hosted link and migration push, but the current remote state has not been verified. Ask the project owner to confirm the linked project and migration history before any hosted database action. Never put a service-role or secret key in the frontend. The publishable key is public and belongs only in the ignored `frontend/.env.local` file.
 
 For local database work, install the root CLI and frontend packages, then run the local Supabase services (Docker required):
 
@@ -49,7 +49,6 @@ npm ci
 npm ci --prefix frontend
 npm run db:start
 npm run db:migrate
-npm run db:reset
 npm run db:test
 ```
 
@@ -57,9 +56,9 @@ In Windows PowerShell, run these as `npm.cmd` commands (for example, `npm.cmd ru
 
 Set `frontend/.env.local` from the local API URL and publishable key shown by `npm run db:start`. In Codespaces, use the forwarded HTTPS URL for port `54321`, and use the forwarded frontend URL for auth redirects. Stop local services with `npm run db:stop`. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
 
-Use `db:migrate` to apply pending migrations without resetting local accounts. `db:reset` removes locally created Auth users and database records before applying migrations and synthetic clinic, provider, and schedule records from `supabase/seed.sql`. Use `db:test` to rerun database checks without resetting local accounts.
+Use `db:migrate` to apply pending migrations without resetting local accounts. `db:reset` removes locally created Auth users and database records before applying migrations and synthetic clinic, provider, and schedule records from `supabase/seed.sql`; run it only when you intentionally want a clean local database. Use `db:test` to rerun database checks without resetting local accounts.
 
-Test local verification through the frontend signup form. Adding a user from Studio's Users page is administrative provisioning and may bypass the signup verification flow. Local email confirmations are captured in Mailpit at `http://127.0.0.1:54324`; they are not sent to real inboxes. The signup screen includes a resend action. The hosted Supabase project needs email confirmation enabled, appropriate redirect URLs, and SMTP configured for real delivery.
+Test local verification through the frontend signup form. Adding a user from Studio's Users page is administrative provisioning and may bypass the signup verification flow. Local email confirmations are captured in Mailpit at `http://127.0.0.1:54324`; they are not sent to real inboxes. The signup screen includes a resend action. Hosted Supabase needs the correct web redirect URLs, email-confirmation settings, and SMTP. For native Capacitor verification or password recovery, add `ca.uottawa.clinicflow://auth-callback` to the hosted Auth redirect allowlist. Native builds and email callback handoff have not been verified.
 
 ## 5. Keep logs useful and private
 
@@ -117,4 +116,4 @@ All three should finish successfully before review. If one fails, read the error
 
 ## Current project status
 
-The frontend has Supabase Auth login/signup/logout, patient profile onboarding, live clinic search, and 30-minute appointment availability/booking against the configured Supabase database. Local provider schedules are synthetic seed data; staff provisioning UI, cancellation/rescheduling, and notification delivery are not connected yet. Accessibility and notification panels still show illustrative content. `backend/` contains legacy prototype modules and tests; the hosted Supabase project has not been linked or migrated.
+The frontend supports account recovery/password changes, editable patient profiles, clinic search, booking/cancellation/rescheduling, staff schedule tools, waitlist offers, accessibility controls, and in-app notifications. External notifications and background reminders are not implemented. Local clinic/provider data is synthetic and limited to Ottawa, K1N, and K2G. French interface translation and native device testing remain incomplete. `backend/` contains legacy prototype modules and tests. Do not push local migration changes to a hosted project without confirming its state and redirect settings with the project owner.

@@ -6,7 +6,11 @@ insert into public.clinics (
     address,
     city,
     province,
+    latitude,
+    longitude,
     description,
+    services,
+    accepting_new_patients,
     is_active
 )
 values
@@ -16,7 +20,11 @@ values
         'Synthetic local development location',
         'Ottawa',
         'ON',
+        45.4215,
+        -75.6972,
         'Synthetic clinic record for local development.',
+        array['Family medicine', 'Walk-in']::text[],
+        true,
         true
     ),
     (
@@ -25,7 +33,11 @@ values
         'Synthetic local development location',
         'Ottawa',
         'ON',
+        45.3470,
+        -75.8040,
         'Synthetic clinic record for local development.',
+        array['Family medicine']::text[],
+        false,
         true
     )
 on conflict (id) do update
@@ -34,8 +46,19 @@ set
     address = excluded.address,
     city = excluded.city,
     province = excluded.province,
+    latitude = excluded.latitude,
+    longitude = excluded.longitude,
     description = excluded.description,
+    services = excluded.services,
+    accepting_new_patients = excluded.accepting_new_patients,
     is_active = excluded.is_active;
+
+insert into private.clinic_search_origins (city, province, postal_fsa, latitude, longitude)
+values
+    ('Ottawa', 'ON', null, 45.4215, -75.6972),
+    ('Ottawa', 'ON', 'K1N', 45.4220, -75.6810),
+    ('Ottawa', 'ON', 'K2G', 45.3330, -75.7380)
+on conflict do nothing;
 
 -- This synthetic staff identity has no password and cannot be used to sign in.
 -- It provides a provider and weekday schedule for local booking tests.

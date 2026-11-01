@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ClinicFlow</string>
+    <string name="title_activity_main">ClinicFlow</string>
+    <string name="package_name">ca.uottawa.clinicflow</string>
+    <string name="custom_url_scheme">ca.uottawa.clinicflow</string>
+</resources>

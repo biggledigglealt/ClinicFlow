@@ -11,6 +11,7 @@ export interface AppointmentSlot {
 
 export interface PatientAppointment {
   id: string
+  clinic_id: string
   start_at: string
   end_at: string
   status: 'booked' | 'confirmed'
@@ -51,10 +52,30 @@ export async function bookAppointment(
   return data as string
 }
 
+export async function cancelPatientAppointment(appointmentId: string) {
+  const { error } = await supabase.rpc('cancel_appointment', {
+    p_appointment_id: appointmentId,
+  })
+  if (error) throw error
+}
+
+export async function reschedulePatientAppointment(
+  appointmentId: string,
+  staffId: string,
+  startAt: string,
+) {
+  const { error } = await supabase.rpc('reschedule_appointment', {
+    p_appointment_id: appointmentId,
+    p_staff_id: staffId,
+    p_start_at: startAt,
+  })
+  if (error) throw error
+}
+
 export async function listMyUpcomingAppointments() {
   const { data, error } = await supabase
     .from('appointments')
-    .select('id, start_at, end_at, status, clinic:clinics!appointments_clinic_id_fkey(name, time_zone), staff:staff_profiles!appointments_staff_id_fkey(first_name, last_name, job_title)')
+    .select('id, clinic_id, start_at, end_at, status, clinic:clinics!appointments_clinic_id_fkey(name, time_zone), staff:staff_profiles!appointments_staff_id_fkey(first_name, last_name, job_title)')
     .in('status', ['booked', 'confirmed'])
     .gte('start_at', new Date().toISOString())
     .order('start_at', { ascending: true })

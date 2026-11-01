@@ -1,11 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { login, logout, register, resendSignupVerification } from './lib/auth'
+import { App as CapacitorApp } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
+import { login, logout, register, requestPasswordReset, resendSignupVerification } from './lib/auth'
 import { getLocalEmailPreviewUrl, supabase } from './lib/supabase'
 import { PatientProfilePanel } from './components/PatientProfilePanel'
+import { AccountSecurityPanel } from './components/AccountSecurityPanel'
+import { AccessibilitySettingsPanel } from './components/AccessibilitySettingsPanel'
+import { ClinicExtrasPanel } from './components/ClinicExtrasPanel'
+import { NotificationCenter } from './components/NotificationCenter'
+import { StaffOperationsPanel } from './components/StaffOperationsPanel'
 import { AppointmentBookingPanel } from './features/appointments/AppointmentBookingPanel'
 import { ClinicFinder } from './features/clinics/ClinicFinder'
 import type { Clinic } from './services/clinicService'
+import { defaultAccessibilityPreferences, type AccessibilityPreferences } from './services/operationsService'
 import './App.css'
 
 const localEmailPreviewUrl = getLocalEmailPreviewUrl()
@@ -13,7 +21,7 @@ const localEmailPreviewUrl = getLocalEmailPreviewUrl()
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [showAuth, setShowAuth] = useState(false)
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'reset'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
@@ -24,17 +32,91 @@ function App() {
   const [isResendingVerification, setIsResendingVerification] = useState(false)
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null)
   const [hasPatientProfile, setHasPatientProfile] = useState(false)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
+  const [accessibilityPreferences, setAccessibilityPreferences] = useState<AccessibilityPreferences>(defaultAccessibilityPreferences)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [appointmentsRefreshToken, setAppointmentsRefreshToken] = useState(0)
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null)
         if (!session) setHasPatientProfile(false)
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsPasswordRecovery(true)
+          setShowAuth(false)
+        }
       },
     )
 
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+
+    let active = true
+    let listener: { remove: () => Promise<void> } | undefined
+    const handledUrls = new Set<string>()
+
+    async function handleAuthCallback(url: string) {
+      if (handledUrls.has(url)) return
+      handledUrls.add(url)
+
+      try {
+        const callbackUrl = new URL(url)
+        if (callbackUrl.protocol !== 'ca.uottawa.clinicflow:') return
+        const callbackParams = new URLSearchParams(callbackUrl.hash.slice(1))
+        const callbackError = callbackUrl.searchParams.get('error_description')
+          ?? callbackParams.get('error_description')
+        if (callbackError) throw new Error(callbackError)
+
+        const code = callbackUrl.searchParams.get('code')
+        const isRecovery = callbackUrl.searchParams.get('type') === 'recovery'
+          || callbackParams.get('type') === 'recovery'
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) throw error
+        } else {
+          const accessToken = callbackParams.get('access_token')
+          const refreshToken = callbackParams.get('refresh_token')
+          if (!accessToken || !refreshToken) return
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+          if (error) throw error
+        }
+        setShowAuth(false)
+        setAuthError('')
+        setAuthMessage(isRecovery
+          ? 'Recovery link accepted. Choose a new password below.'
+          : 'Your account is verified and signed in.')
+      } catch (callbackFailure) {
+        if (active) setAuthError(callbackFailure instanceof Error
+          ? callbackFailure.message
+          : 'Could not complete the account verification or recovery link.')
+      }
+    }
+
+    void CapacitorApp.addListener('appUrlOpen', ({ url }) => void handleAuthCallback(url))
+      .then((registeredListener) => {
+        if (active) listener = registeredListener
+        else void registeredListener.remove()
+      })
+    void CapacitorApp.getLaunchUrl().then((launch) => {
+      if (launch?.url) return handleAuthCallback(launch.url)
+    })
+
+    return () => {
+      active = false
+      void listener?.remove()
+    }
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.lang = accessibilityPreferences.language
+  }, [accessibilityPreferences.language])
 
   async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -45,7 +127,10 @@ function App() {
     setIsSubmitting(true)
 
     try {
-      if (authMode === 'login') {
+      if (authMode === 'reset') {
+        await requestPasswordReset(email.trim())
+        setAuthMessage(`If an account exists for ${email.trim()}, a password recovery link has been sent.`)
+      } else if (authMode === 'login') {
         await login(email.trim(), password)
         setAuthMessage('You are signed in.')
         setShowAuth(false)
@@ -106,7 +191,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell text-size-${accessibilityPreferences.text_size}${accessibilityPreferences.high_contrast ? ' high-contrast' : ''}`}>
       <header className="topbar">
         <div>
           <p className="eyebrow">ClinicFlow</p>
@@ -134,12 +219,25 @@ function App() {
             {showAuth ? 'Close' : 'Log in'}
           </button>
         )}
+        <nav className="primary-navigation" aria-label="Main navigation">
+          <a href="#clinic-search">Find clinics</a>
+          <a href="#appointment-panel">Appointments</a>
+          {user && <a href="#accessibility-panel">Accessibility</a>}
+          {user && (
+            <a className="notification-nav-link" href="#notifications-panel" aria-label={`Notifications, ${unreadNotificationCount} unread`}>
+              <span aria-hidden="true">🔔</span> Notifications
+              {unreadNotificationCount > 0 && <span className="unread-badge">{unreadNotificationCount}</span>}
+            </a>
+          )}
+        </nav>
       </header>
 
       {showAuth && !user && (
         <section className="panel auth-panel" id="auth-panel" aria-labelledby="auth-title">
           <div className="panel-header">
-            <h3 id="auth-title">{authMode === 'login' ? 'Log in' : 'Create an account'}</h3>
+          <h3 id="auth-title">
+            {authMode === 'login' ? 'Log in' : authMode === 'signup' ? 'Create an account' : 'Recover your password'}
+          </h3>
           </div>
 
           <form className="auth-form" onSubmit={handleAuthSubmit}>
@@ -155,21 +253,37 @@ function App() {
               />
             </label>
 
-            <label>
-              Password
-              <input
-                type="password"
-                name="password"
-                autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                minLength={authMode === 'signup' ? 12 : undefined}
-                required
-              />
-              {authMode === 'signup' && (
-                <span className="input-hint">Use at least 12 characters.</span>
-              )}
-            </label>
+            {authMode !== 'reset' && (
+              <label>
+                Password
+                <input
+                  type="password"
+                  name="password"
+                  autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  minLength={authMode === 'signup' ? 12 : undefined}
+                  required
+                />
+                {authMode === 'signup' && (
+                  <span className="input-hint">Use at least 12 characters.</span>
+                )}
+              </label>
+            )}
+
+            {authMode === 'login' && (
+              <button
+                type="button"
+                className="text-button auth-reset-link"
+                onClick={() => {
+                  setAuthMode('reset')
+                  setAuthError('')
+                  setAuthMessage('')
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
 
             {authError && <p className="auth-error" role="alert">{authError}</p>}
             {authMessage && <p className="auth-message" role="status">{authMessage}</p>}
@@ -192,30 +306,51 @@ function App() {
               </div>
             )}
 
+            {authMode === 'reset' && localEmailPreviewUrl && (
+              <div className="verification-actions">
+                <a href={localEmailPreviewUrl} target="_blank" rel="noreferrer">
+                  Open local email inbox
+                </a>
+              </div>
+            )}
+
             <button type="submit" className="primary-button" disabled={isSubmitting}>
               {isSubmitting
                 ? 'Please wait…'
                 : authMode === 'login'
                   ? 'Log in'
-                  : 'Create account'}
+                  : authMode === 'signup'
+                    ? 'Create account'
+                    : 'Send recovery link'}
             </button>
           </form>
 
           <p className="auth-mode-switch">
-            {authMode === 'login' ? 'New to ClinicFlow?' : 'Already have an account?'}{' '}
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => {
-                setAuthMode((mode) => mode === 'login' ? 'signup' : 'login')
-                setAuthError('')
-                setAuthMessage('')
-                setCanResendVerification(false)
-                setVerificationEmail('')
-              }}
-            >
-              {authMode === 'login' ? 'Create an account' : 'Log in'}
-            </button>
+            {authMode === 'reset' ? (
+              <>
+                Remember your password?{' '}
+                <button type="button" className="text-button" onClick={() => setAuthMode('login')}>
+                  Return to log in
+                </button>
+              </>
+            ) : (
+              <>
+                {authMode === 'login' ? 'New to ClinicFlow?' : 'Already have an account?'}{' '}
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    setAuthMode((mode) => mode === 'login' ? 'signup' : 'login')
+                    setAuthError('')
+                    setAuthMessage('')
+                    setCanResendVerification(false)
+                    setVerificationEmail('')
+                  }}
+                >
+                  {authMode === 'login' ? 'Create an account' : 'Log in'}
+                </button>
+              </>
+            )}
           </p>
         </section>
       )}
@@ -231,15 +366,26 @@ function App() {
         />
       )}
 
+      {user?.email && (
+        <AccountSecurityPanel
+          key={user.id}
+          email={user.email}
+          recoveryMode={isPasswordRecovery}
+          onRecoveryComplete={() => setIsPasswordRecovery(false)}
+        />
+      )}
+
+      {user && <StaffOperationsPanel key={user.id} userId={user.id} />}
+
       <section className="hero-panel">
         <div>
-          <p className="eyebrow">Deliverable C / D</p>
-          <h2>Simple scheduling for patients and front-desk staff</h2>
+          <p className="eyebrow">Patient appointment flow</p>
+          <h2>Find a clinic and book an appointment</h2>
         </div>
-        <span className="status-pill">Admin-first workflow</span>
+        <span className="status-pill">Current prototype</span>
       </section>
 
-      <main className="content-grid">
+      <main className="content-grid" id="clinic-search">
         <ClinicFinder
           selectedClinicId={selectedClinic?.id ?? null}
           onSelectClinic={setSelectedClinic}
@@ -249,34 +395,28 @@ function App() {
           clinic={selectedClinic}
           userId={user?.id ?? null}
           hasPatientProfile={hasPatientProfile}
+          textToSpeech={accessibilityPreferences.text_to_speech}
+          language={accessibilityPreferences.language}
+          refreshToken={appointmentsRefreshToken}
         />
       </main>
 
-      <section className="bottom-grid">
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Accessibility settings</h3>
-          </div>
-          <ul className="feature-list">
-            <li>English / French toggle</li>
-            <li>Large text mode</li>
-            <li>High contrast mode</li>
-            <li>Text-to-speech support</li>
-          </ul>
-        </article>
+      {user && <section className="bottom-grid">
+        <AccessibilitySettingsPanel
+          key={user.id}
+          userId={user.id}
+          onPreferencesChange={setAccessibilityPreferences}
+        />
+        <ClinicExtrasPanel
+          key={`${user.id}:${selectedClinic?.id ?? 'no-clinic'}`}
+          clinic={selectedClinic}
+          userId={user.id}
+          hasPatientProfile={hasPatientProfile}
+          onWaitlistAccepted={() => setAppointmentsRefreshToken((token) => token + 1)}
+        />
+      </section>}
 
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Notifications</h3>
-          </div>
-          <ul className="feature-list">
-            <li>Reminder sent 24 hours before visit</li>
-            <li>Cancellation alert to patient</li>
-            <li>Clinic announcement banner</li>
-            <li>Audit log retained for system activity</li>
-          </ul>
-        </article>
-      </section>
+      {user && <NotificationCenter key={user.id} onUnreadCountChange={setUnreadNotificationCount} />}
     </div>
   )
 }

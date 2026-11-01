@@ -73,7 +73,7 @@ Use `npm run db:migrate` to apply new schema changes while preserving local acco
 
 Email confirmation is enabled in local Auth. Test it through the frontend signup form; creating a user from Studio's Users page is administrative provisioning and may bypass signup verification. Local confirmation messages are captured by Mailpit at `http://127.0.0.1:54324`; local email is not delivered to external inboxes. The signup screen provides a resend action. For the hosted project, enable email confirmation, set the allowed Auth redirect URLs, and configure an SMTP provider before expecting real verification emails.
 
-The checked-in migration is in `supabase/migrations/`. It has not been applied to the hosted project. Hosted Auth redirect URLs, email confirmation, project linking, and migration deployment must be configured separately after team review.
+The checked-in migrations are in `supabase/migrations/`. A terminal transcript in the in-progress deliverable reports that a hosted project was linked and these migrations were pushed, but the current remote migration history and Auth settings have not been verified in this review. Confirm the live state with the project owner before linking or pushing anything. Review Auth redirect URLs and email-confirmation settings before using hosted data.
 ### Logging and privacy goals
 
 The team wants accurate, useful logs for important administrative actions. As a starting point, record the time, action, non-sensitive actor identifier, affected record identifier, and whether the action succeeded. Keep logs focused: **never log passwords, access tokens, patient names, dates of birth, contact details, or full request contents.** Use fake data while developing and testing.
@@ -123,14 +123,14 @@ npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-- The test command runs the existing backend prototype tests.
-- The lint command checks frontend code for common issues.
-- The build command checks TypeScript and builds the frontend.
-- The PostgreSQL migration and RLS tests run with `npm run db:start`, `npm run db:reset`, and `npm run db:test`; Docker is required.
+- The test command runs the existing backend prototype tests. Frontend lint and build commands check the React application.
+- PostgreSQL tests run against local Supabase with Docker. `db:migrate` applies pending local migrations without resetting local users or records. Use `db:reset` only when you intentionally want to erase local Auth users and database data.
 
 ## What is implemented today?
 
-The frontend is a runnable React/TypeScript/Vite prototype connected to local Supabase Auth and PostgreSQL. Login, signup, logout, patient profile onboarding, active clinic search, 30-minute appointment availability, and transactional booking are connected through frontend services and database functions. Local clinic, provider, and schedule seed records are synthetic. Staff provisioning UI, cancellation/rescheduling, and notification delivery remain to be implemented. Accessibility and notification panels still contain illustrative content. The migration has not been applied to the hosted project. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
+The React/TypeScript/Vite prototype uses Supabase Auth and PostgreSQL. It supports account recovery and password changes, editable minimal patient profiles, clinic search against synthetic Ottawa data, configurable availability, patient booking/cancellation/rescheduling, and upcoming appointments. Clinic staff with trusted active memberships can manage recurring hours and unavailable periods, view their daily schedule, set appointment duration, check patients in, cancel bookings, and mark completed/no-show outcomes. Waitlist offers are created when a matching appointment is cancelled and can be accepted through the validated booking function. Accessibility settings apply text size, contrast, and speech preferences; the full French interface translation is still incomplete. In-app notifications are generated for booking changes and poll while the page is open. Email/SMS/push delivery, background reminders, and trusted staff provisioning UI remain outside the prototype.
+
+Capacitor Android and iOS project files are configured with an app callback for verification and password recovery. Native builds and device testing have not been completed. Clinic directory records remain synthetic and limited to Ottawa, K1N, and K2G. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
 
 ## Privacy and project scope
 
@@ -146,6 +146,8 @@ The frontend is a runnable React/TypeScript/Vite prototype connected to local Su
 - `supabase/` — local CLI configuration, database migrations, and database tests.
 - `tests/` — test planning and validation notes.
 - `docs/` — team onboarding and subsystem notes.
+- [Deliverable D alignment audit](docs/DELIVERABLE_D_ALIGNMENT.md) — current implementation status, spec conflicts, and remaining report work.
+- [Deliverable D detailed design draft](docs/DELIVERABLE_D_DETAILED_DESIGN.txt) — copy-ready subsystem descriptions and drawing guidance.
 - `Deliverables/` — project brief and course deliverables.
 
 The `.devcontainer/` folder configures Codespaces. The `.github/` folder contains the pull request template and automated checks.

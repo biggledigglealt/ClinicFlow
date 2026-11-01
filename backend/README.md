@@ -12,10 +12,10 @@ The frontend has a Supabase client and basic signup, login, logout, and current-
 
 - Supabase Auth owns passwords, sessions, and recovery.
 - RLS limits profile, appointment, notification, waitlist, and preference records to the owner or authorized clinic staff.
-- Clients have no direct appointment insert, update, or delete privileges. Booking, rescheduling, cancellation, and check-in need validated database functions before those workflows are enabled.
-- Staff membership and role provisioning are not exposed to client writes; trusted provisioning still needs implementation.
+- Clients have no direct appointment insert, update, or delete privileges. Booking, rescheduling, cancellation, check-in, and outcomes use validated database functions and overlap constraints.
+- Staff membership and role provisioning are not exposed to public signup or client writes. Trusted provisioning remains an administrative step outside the prototype UI.
 - Patient profiles collect name and optional phone only. Date of birth and clinical data are out of scope.
-- Appointment audit records contain actor, action, entity type/id, outcome, and timestamp, not patient details or request bodies.
+- Audit triggers record appointment and selected profile, membership, schedule, waitlist, announcement, and accessibility changes with actor, action, entity type/id, and time. They do not store patient details or request bodies; reads and failed actions are not audited.
 - Use synthetic data only. The migration is a development foundation, not a production healthcare security review.
 
 ## Local database work
@@ -26,20 +26,22 @@ From the repository root, install dependencies and start the local Supabase serv
 npm ci
 npm ci --prefix frontend
 npm run db:start
-npm run db:reset
+npm run db:migrate
 npm run db:test
 npm run db:stop
 ```
 
-The database tests live in `supabase/tests/database/rls.test.sql`. To connect the Vite app to local Supabase, copy `frontend/.env.example` to the ignored `frontend/.env.local` and use the API URL and publishable key printed by the CLI.
+`db:reset` deletes local Auth users and database records, so use it only when a clean local database is intentional. The database tests live in `supabase/tests/database/rls.test.sql`. To connect the Vite app to local Supabase, copy `frontend/.env.example` to the ignored `frontend/.env.local` and use the API URL and publishable key printed by the CLI.
 
-The hosted project has not been linked or migrated from this repository. Hosted Auth redirect URLs and email settings, project linking, migration deployment, and a security review remain before using hosted data.
+A terminal transcript in the in-progress deliverable reports that a hosted project was linked and migrations were pushed, but this checkout's current remote state has not been verified. Confirm the linked project and migration history with its owner before any further hosted changes. Hosted Auth redirect URLs, email settings, and a security review also need confirmation before real use.
 
-## Remaining implementation
+## Remaining work
 
-- Validated booking, cancellation, rescheduling, and check-in database functions.
-- Trusted staff and administrator provisioning.
-- Availability validation for exceptions, closures, and schedule changes.
-- Retryable notification outbox and delivery Edge Functions.
-- Frontend auth state, profile completion, and service modules that replace static sample data.
-- Realtime subscriptions after persistent notifications and booking operations are in place.
+- Provide trusted staff and administrator provisioning outside public signup.
+- Verify the 20261103 waitlist/audit migration with the team before applying it to any hosted project.
+- Configure hosted Supabase redirect allowlists for `ca.uottawa.clinicflow://auth-callback` before native email verification or recovery.
+- Add verified clinic coordinates and city/postal lookup data beyond the synthetic Ottawa examples.
+- Complete French interface translation and accessibility testing with screen readers and real devices.
+- Add external email/SMS/push delivery, background reminders, and retry handling if those remain required by the approved criteria.
+- Build and test Android/iOS packages on supported native toolchains; Xcode requires macOS.
+- Extend audit coverage to failed actions and reads only if required by the team's approved privacy/security requirements.

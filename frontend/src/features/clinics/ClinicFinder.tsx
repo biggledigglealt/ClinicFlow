@@ -1,39 +1,58 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { listActiveClinics, type Clinic } from '../../services/clinicService'
+import {
+  listClinicServiceOptions,
+  searchClinics,
+  type Clinic,
+  type ClinicSearchOptions,
+} from '../../services/clinicService'
 
 interface ClinicFinderProps {
   selectedClinicId: string | null
   onSelectClinic: (clinic: Clinic) => void
 }
 
+const defaultSearch: ClinicSearchOptions = {
+  location: 'Ottawa',
+  maxDistanceKm: 25,
+  services: [],
+  acceptingNewPatients: false,
+  onlyWithAvailability: false,
+}
+
+function formatNextAvailable(value: string, timeZone: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone,
+  }).format(new Date(value))
+}
+
 export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderProps) {
   const [clinics, setClinics] = useState<Clinic[]>([])
-  const [cityInput, setCityInput] = useState('')
+  const [serviceOptions, setServiceOptions] = useState<string[]>([])
+  const [location, setLocation] = useState(defaultSearch.location)
+  const [maxDistanceKm, setMaxDistanceKm] = useState(defaultSearch.maxDistanceKm)
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [acceptingNewPatients, setAcceptingNewPatients] = useState(false)
+  const [onlyWithAvailability, setOnlyWithAvailability] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-
-  async function loadClinics(city = '') {
-    setError('')
-    setIsLoading(true)
-    try {
-      setClinics(await listActiveClinics(city))
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load clinics.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   useEffect(() => {
     let isCurrent = true
 
-    listActiveClinics()
-      .then((activeClinics) => {
-        if (isCurrent) setClinics(activeClinics)
+    Promise.all([
+      listClinicServiceOptions(),
+      searchClinics(defaultSearch),
+    ])
+      .then(([services, initialClinics]) => {
+        if (!isCurrent) return
+        setServiceOptions(services)
+        setClinics(initialClinics)
       })
       .catch((loadError: unknown) => {
         if (isCurrent) {
-          setError(loadError instanceof Error ? loadError.message : 'Could not load clinics.')
+          setError(loadError instanceof Error ? loadError.message : 'Could not load clinic search.')
         }
       })
       .finally(() => {
@@ -45,9 +64,34 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
     }
   }, [])
 
+  async function loadClinics(options: ClinicSearchOptions) {
+    setError('')
+    setIsLoading(true)
+    try {
+      setClinics(await searchClinics(options))
+    } catch (searchError) {
+      setClinics([])
+      setError(searchError instanceof Error ? searchError.message : 'Could not search clinics.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    void loadClinics(cityInput)
+    void loadClinics({
+      location: location.trim(),
+      maxDistanceKm,
+      services: selectedServices,
+      acceptingNewPatients,
+      onlyWithAvailability,
+    })
+  }
+
+  function toggleService(service: string) {
+    setSelectedServices((current) => current.includes(service)
+      ? current.filter((item) => item !== service)
+      : [...current, service])
   }
 
   return (
@@ -57,34 +101,111 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
       </div>
 
       <form className="clinic-search" onSubmit={handleSearch}>
-        <label className="visually-hidden" htmlFor="clinic-city-search">Search by city</label>
-        <input
-          id="clinic-city-search"
-          type="search"
-          value={cityInput}
-          onChange={(event) => setCityInput(event.target.value)}
-          placeholder="Search by city"
-        />
-        <button type="submit" disabled={isLoading}>Search</button>
+        <div className="clinic-search-fields">
+          <label htmlFor="clinic-location-search">
+            City or postal code
+            <input
+              id="clinic-location-search"
+              type="search"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              placeholder="e.g. Ottawa or K1N 6N5"
+              maxLength={100}
+              required
+            />
+            <span className="field-hint">Prototype data covers Ottawa and postal prefixes K1N and K2G.</span>
+          </label>
+
+          <label htmlFor="clinic-distance-search">
+            Maximum distance
+            <select
+              id="clinic-distance-search"
+              value={maxDistanceKm}
+              onChange={(event) => setMaxDistanceKm(Number(event.target.value))}
+            >
+              {[5, 10, 25, 50, 100, 200].map((distance) => (
+                <option key={distance} value={distance}>{distance} km</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <fieldset className="clinic-service-filter">
+          <legend>Services</legend>
+          {serviceOptions.length > 0 ? (
+            <div className="clinic-filter-options">
+              {serviceOptions.map((service) => (
+                <label className="clinic-checkbox" key={service}>
+                  <input
+                    type="checkbox"
+                    checked={selectedServices.includes(service)}
+                    onChange={() => toggleService(service)}
+                  />
+                  {service}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="section-description">No clinic services are listed yet.</p>
+          )}
+        </fieldset>
+
+        <div className="clinic-filter-options clinic-boolean-filters">
+          <label className="clinic-checkbox">
+            <input
+              type="checkbox"
+              checked={acceptingNewPatients}
+              onChange={(event) => setAcceptingNewPatients(event.target.checked)}
+            />
+            Accepting new patients
+          </label>
+          <label className="clinic-checkbox">
+            <input
+              type="checkbox"
+              checked={onlyWithAvailability}
+              onChange={(event) => setOnlyWithAvailability(event.target.checked)}
+            />
+            Only show clinics with available appointments
+          </label>
+        </div>
+
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Searching…' : 'Search clinics'}
+        </button>
       </form>
 
       {error && <p className="auth-error" role="alert">{error}</p>}
       {isLoading ? (
-        <p role="status">Loading clinics…</p>
+        <p role="status">Finding nearby clinics…</p>
       ) : clinics.length > 0 ? (
         <div className="clinic-list" aria-live="polite">
           {clinics.map((clinic) => {
             const isSelected = clinic.id === selectedClinicId
-            const location = [clinic.city, clinic.province].filter(Boolean).join(', ')
+            const locationLabel = [clinic.city, clinic.province].filter(Boolean).join(', ')
 
             return (
               <article className={`clinic-card${isSelected ? ' selected' : ''}`} key={clinic.id}>
                 <div className="clinic-details">
                   <h4>{clinic.name}</h4>
                   <p>{clinic.address}</p>
-                  {location && <p>{location}</p>}
+                  {locationLabel && <p>{locationLabel}</p>}
                   {clinic.description && <p>{clinic.description}</p>}
                   {clinic.phone && <p>{clinic.phone}</p>}
+                  <p><strong>Approx. distance:</strong> {clinic.distance_km.toFixed(1)} km</p>
+                  <p>
+                    <strong>Services:</strong>{' '}
+                    {clinic.services.length > 0 ? clinic.services.join(', ') : 'Not listed'}
+                  </p>
+                  <p>
+                    <strong>New patients:</strong>{' '}
+                    {clinic.accepting_new_patients ? 'Accepted' : 'Not currently accepted'}
+                  </p>
+                  <p>
+                    <strong>Next available:</strong>{' '}
+                    {clinic.next_available_at
+                      ? formatNextAvailable(clinic.next_available_at, clinic.time_zone)
+                      : 'No opening found in the next 60 days'}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -99,7 +220,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
           })}
         </div>
       ) : (
-        <p>No active clinics found. Try another city or check back later.</p>
+        <p>No clinics match these search options. Try a larger distance or remove a filter.</p>
       )}
     </section>
   )
