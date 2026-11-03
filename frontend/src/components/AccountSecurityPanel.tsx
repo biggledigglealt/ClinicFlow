@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { changePassword, updatePassword } from '../lib/auth'
+import { useTranslate } from '../lib/i18n'
 
 interface AccountSecurityPanelProps {
   email: string
@@ -8,6 +9,7 @@ interface AccountSecurityPanelProps {
 }
 
 export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }: AccountSecurityPanelProps) {
+  const t = useTranslate()
   const [isOpen, setIsOpen] = useState(recoveryMode)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -22,7 +24,7 @@ export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }
     setMessage('')
 
     if (newPassword !== confirmPassword) {
-      setError('The new passwords do not match.')
+      setError(t('The new passwords do not match.'))
       return
     }
 
@@ -31,17 +33,17 @@ export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }
       if (recoveryMode) {
         await updatePassword(newPassword)
         onRecoveryComplete()
-        setMessage('Your password has been reset.')
+        setMessage(t('Your password has been reset.'))
       } else {
         await changePassword(email, currentPassword, newPassword)
-        setMessage('Your password has been changed.')
+        setMessage(t('Your password has been changed.'))
       }
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
       setIsOpen(false)
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Could not update your password.')
+      setError(t(saveError instanceof Error ? saveError.message : 'Could not update your password.'))
     } finally {
       setIsSaving(false)
     }
@@ -50,11 +52,11 @@ export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }
   return (
     <section className="panel account-security-panel" aria-labelledby="account-security-title">
       <div className="panel-header">
-        <h3 id="account-security-title">Account security</h3>
+        <h3 id="account-security-title">{t('Account security')}</h3>
       </div>
 
       {recoveryMode ? (
-        <p className="section-description">Choose a new password to finish recovering your account.</p>
+        <p className="section-description">{t('Choose a new password to finish recovering your account.')}</p>
       ) : (
         <button
           type="button"
@@ -66,7 +68,7 @@ export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }
             setMessage('')
           }}
         >
-          {isOpen ? 'Cancel password change' : 'Change password'}
+          {t(isOpen ? 'Cancel password change' : 'Change password')}
         </button>
       )}
 
@@ -74,7 +76,7 @@ export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }
         <form className="security-form" onSubmit={handleSubmit}>
           {!recoveryMode && (
             <label>
-              Current password
+              {t('Current password')}
               <input
                 type="password"
                 autoComplete="current-password"
@@ -85,7 +87,7 @@ export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }
             </label>
           )}
           <label>
-            New password
+            {t('New password')}
             <input
               type="password"
               autoComplete="new-password"
@@ -94,10 +96,10 @@ export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }
               minLength={12}
               required
             />
-            <span className="input-hint">Use at least 12 characters.</span>
+            <span className="input-hint">{t('Use at least 12 characters.')}</span>
           </label>
           <label>
-            Confirm new password
+            {t('Confirm new password')}
             <input
               type="password"
               autoComplete="new-password"
@@ -110,7 +112,7 @@ export function AccountSecurityPanel({ email, recoveryMode, onRecoveryComplete }
 
           {error && <p className="auth-error" role="alert">{error}</p>}
           <button type="submit" className="primary-button" disabled={isSaving}>
-            {isSaving ? 'Updating…' : recoveryMode ? 'Set new password' : 'Change password'}
+            {t(isSaving ? 'Updating…' : recoveryMode ? 'Set new password' : 'Change password')}
           </button>
         </form>
       )}

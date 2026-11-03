@@ -19,12 +19,6 @@ export interface PatientAppointment {
   staff: { first_name: string; last_name: string; job_title: string | null } | null
 }
 
-type MaybeRelation<T> = T | T[] | null
-type AppointmentRow = Omit<PatientAppointment, 'clinic' | 'staff'> & {
-  clinic: MaybeRelation<{ name: string; time_zone: string }>
-  staff: MaybeRelation<{ first_name: string; last_name: string; job_title: string | null }>
-}
-
 export async function getAvailableSlots(clinicId: string, date: string) {
   const { data, error } = await supabase.rpc('available_appointment_slots', {
     p_clinic_id: clinicId,
@@ -41,7 +35,7 @@ export async function bookAppointment(
   staffId: string,
   startAt: string,
 ) {
-  const { data, error } = await supabase.rpc('book_appointment', {
+  const { data, error } = await supabase.rpc('book_appointment_with_audit', {
     p_clinic_id: clinicId,
     p_staff_id: staffId,
     p_start_at: startAt,
@@ -49,7 +43,11 @@ export async function bookAppointment(
 
   if (error) throw error
 
-  return data as string
+  const result = Array.isArray(data) ? data[0] : data
+  if (!result?.success || !result.appointment_id) {
+    throw new Error(result?.message ?? 'The booking could not be completed. Please try again.')
+  }
+  return result.appointment_id as string
 }
 
 export async function cancelPatientAppointment(appointmentId: string) {
@@ -73,23 +71,31 @@ export async function reschedulePatientAppointment(
 }
 
 export async function listMyUpcomingAppointments() {
-  const { data, error } = await supabase
-    .from('appointments')
-    .select('id, clinic_id, start_at, end_at, status, clinic:clinics!appointments_clinic_id_fkey(name, time_zone), staff:staff_profiles!appointments_staff_id_fkey(first_name, last_name, job_title)')
-    .in('status', ['booked', 'confirmed'])
-    .gte('start_at', new Date().toISOString())
-    .order('start_at', { ascending: true })
-
+  const { data, error } = await supabase.rpc('list_my_upcoming_appointments')
   if (error) throw error
-
-  const rows = (data ?? []) as unknown as AppointmentRow[]
+  const rows = (data ?? []) as Array<{
+    id: string
+    clinic_id: string
+    start_at: string
+    end_at: string
+    status: string
+    clinic_name: string
+    clinic_time_zone: string
+    staff_first_name: string
+    staff_last_name: string
+    staff_job_title: string | null
+  }>
   return rows.map((appointment) => ({
-    ...appointment,
-    clinic: Array.isArray(appointment.clinic)
-      ? appointment.clinic[0] ?? null
-      : appointment.clinic,
-    staff: Array.isArray(appointment.staff)
-      ? appointment.staff[0] ?? null
-      : appointment.staff,
+    id: appointment.id,
+    clinic_id: appointment.clinic_id,
+    start_at: appointment.start_at,
+    end_at: appointment.end_at,
+    status: appointment.status as PatientAppointment['status'],
+    clinic: { name: appointment.clinic_name, time_zone: appointment.clinic_time_zone },
+    staff: {
+      first_name: appointment.staff_first_name,
+      last_name: appointment.staff_last_name,
+      job_title: appointment.staff_job_title,
+    },
   }))
 }

@@ -6,9 +6,14 @@
     "db:stop": "supabase stop",
     "db:migrate": "supabase migration up --local",
     "db:reset": "supabase db reset",
-    "db:test": "supabase test db"
+    "db:test": "supabase test db",
+    "db:seed": "node scripts/seed-local.mjs",
+    "clinic:import": "node scripts/import-verified-clinics.mjs",
+    "notify:local": "node scripts/send-local-notifications.mjs",
+    "prototype": "npm run db:start && npm run db:migrate && npm run db:seed && npm --prefix frontend run dev -- --open"
   },
   "devDependencies": {
+    "nodemailer": "^7.0.10",
     "supabase": "^2.122.0"
   }
 }

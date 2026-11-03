@@ -8,6 +8,11 @@ export interface ClinicMembership {
   clinic: { id: string; name: string; time_zone: string } | null
 }
 
+export interface ScheduleInterval {
+  opensAt: string
+  closesAt: string
+}
+
 export interface ClinicAppointment {
   id: string
   patient_first_name: string
@@ -119,22 +124,26 @@ export async function rescheduleAppointment(appointmentId: string, staffId: stri
   if (error) throw error
 }
 
-export async function setClinicHours(clinicId: string, day: number, opensAt: string | null, closesAt: string | null) {
-  const { error } = await supabase.rpc('set_clinic_hours_for_day', {
+export async function setClinicHours(clinicId: string, day: number, intervals: ScheduleInterval[]) {
+  const { error } = await supabase.rpc('set_clinic_hours_intervals_for_day', {
     p_clinic_id: clinicId,
     p_day_of_week: day,
-    p_opens_at: opensAt,
-    p_closes_at: closesAt,
+    p_intervals: intervals.map((interval) => ({
+      opens_at: interval.opensAt,
+      closes_at: interval.closesAt,
+    })),
   })
   if (error) throw error
 }
 
-export async function setMyStaffHours(membershipId: string, day: number, opensAt: string | null, closesAt: string | null) {
-  const { error } = await supabase.rpc('set_my_staff_hours_for_day', {
+export async function setMyStaffHours(membershipId: string, day: number, intervals: ScheduleInterval[]) {
+  const { error } = await supabase.rpc('set_staff_hours_intervals_for_day', {
     p_membership_id: membershipId,
     p_day_of_week: day,
-    p_opens_at: opensAt,
-    p_closes_at: closesAt,
+    p_intervals: intervals.map((interval) => ({
+      opens_at: interval.opensAt,
+      closes_at: interval.closesAt,
+    })),
   })
   if (error) throw error
 }

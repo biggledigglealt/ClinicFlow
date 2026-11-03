@@ -49,6 +49,8 @@ Use Supabase Auth for identity and sessions. Do not create application passwords
 
 ### Local database setup
 
+For a one-command local prototype launch on Windows, run **npm.cmd run prototype** from the repository root. It starts Supabase, applies pending migrations, reapplies the idempotent synthetic seed data, starts Vite, and opens the app in your browser. It uses the existing **frontend/.env.local** settings and does not reset local accounts. Press **Ctrl+C** to stop Vite; use **npm.cmd run db:stop** to stop Supabase.
+
 Install the repository tooling and frontend dependencies:
 
 ```sh
@@ -72,6 +74,8 @@ Copy `frontend/.env.example` to `frontend/.env.local` and set the local API URL 
 Use `npm run db:migrate` to apply new schema changes while preserving local accounts and data. `npm run db:reset` recreates the local database, removes locally created Auth users and data, then loads synthetic clinic, provider, and schedule records from `supabase/seed.sql`.
 
 Email confirmation is enabled in local Auth. Test it through the frontend signup form; creating a user from Studio's Users page is administrative provisioning and may bypass signup verification. Local confirmation messages are captured by Mailpit at `http://127.0.0.1:54324`; local email is not delivered to external inboxes. The signup screen provides a resend action. For the hosted project, enable email confirmation, set the allowed Auth redirect URLs, and configure an SMTP provider before expecting real verification emails.
+
+Appointment events also create private local email outbox jobs for confirmations, cancellations, reschedules, and eligible 24-hour reminders. To process jobs that are due, run `npm.cmd run notify:local` in Windows PowerShell, then inspect Mailpit at `http://127.0.0.1:54324`. The worker is deliberately local-only. There is no hosted email provider or scheduled background worker, so do not treat this as automatic production delivery.
 
 The checked-in migrations are in `supabase/migrations/`. A terminal transcript in the in-progress deliverable reports that a hosted project was linked and these migrations were pushed, but the current remote migration history and Auth settings have not been verified in this review. Confirm the live state with the project owner before linking or pushing anything. Review Auth redirect URLs and email-confirmation settings before using hosted data.
 ### Logging and privacy goals
@@ -128,9 +132,9 @@ npm --prefix frontend run build
 
 ## What is implemented today?
 
-The React/TypeScript/Vite prototype uses Supabase Auth and PostgreSQL. It supports account recovery and password changes, editable minimal patient profiles, clinic search against synthetic Ottawa data, configurable availability, patient booking/cancellation/rescheduling, and upcoming appointments. Clinic staff with trusted active memberships can manage recurring hours and unavailable periods, view their daily schedule, set appointment duration, check patients in, cancel bookings, and mark completed/no-show outcomes. Waitlist offers are created when a matching appointment is cancelled and can be accepted through the validated booking function. Accessibility settings apply text size, contrast, and speech preferences; the full French interface translation is still incomplete. In-app notifications are generated for booking changes and poll while the page is open. Email/SMS/push delivery, background reminders, and trusted staff provisioning UI remain outside the prototype.
+The React/TypeScript/Vite prototype uses Supabase Auth and PostgreSQL. It supports account recovery and password changes, editable minimal patient profiles, clinic search against synthetic Ottawa data, configurable availability, patient booking/cancellation/rescheduling, and upcoming appointments. Clinic staff with trusted active memberships can manage split recurring hours and unavailable periods, view their daily schedule, set appointment duration, check patients in, cancel bookings, and mark completed/no-show outcomes. A platform administrator can provision an existing verified account for clinic staff access; public signup cannot grant staff roles. Waitlist offers are created when a matching appointment is cancelled and can be accepted through the validated booking function. Accessibility settings apply text size, contrast, English/French interface labels, and speech preferences; clinic and staff-entered content stays in its original language. In-app notifications are generated for booking changes and poll while the page is open. Appointment email events are queued and can be delivered to local Mailpit by manually running the local worker. A production email provider, scheduled background worker, SMS, and push delivery are not configured.
 
-Capacitor Android and iOS project files are configured with an app callback for verification and password recovery. Native builds and device testing have not been completed. Clinic directory records remain synthetic and limited to Ottawa, K1N, and K2G. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
+Capacitor Android and iOS project files are configured with an app callback for verification and password recovery. Native builds and device testing have not been completed. Clinic directory records remain synthetic and limited to Ottawa, K1N, and K2G; no verified listings have been imported. A CSV workflow validates HTTPS source details and a 25 km pilot radius around uOttawa, and writes verified records only to local Supabase. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
 
 ## Privacy and project scope
 

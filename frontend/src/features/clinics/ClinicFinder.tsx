@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useLanguage, useTranslate } from '../../lib/i18n'
 import {
   listClinicServiceOptions,
   searchClinics,
@@ -19,8 +20,8 @@ const defaultSearch: ClinicSearchOptions = {
   onlyWithAvailability: false,
 }
 
-function formatNextAvailable(value: string, timeZone: string) {
-  return new Intl.DateTimeFormat(undefined, {
+function formatNextAvailable(value: string, timeZone: string, language: 'en' | 'fr') {
+  return new Intl.DateTimeFormat(language === 'fr' ? 'fr-CA' : 'en-CA', {
     dateStyle: 'medium',
     timeStyle: 'short',
     timeZone,
@@ -28,6 +29,8 @@ function formatNextAvailable(value: string, timeZone: string) {
 }
 
 export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderProps) {
+  const t = useTranslate()
+  const language = useLanguage()
   const [clinics, setClinics] = useState<Clinic[]>([])
   const [serviceOptions, setServiceOptions] = useState<string[]>([])
   const [location, setLocation] = useState(defaultSearch.location)
@@ -97,27 +100,27 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   return (
     <section className="panel" aria-labelledby="clinic-finder-title">
       <div className="panel-header">
-        <h3 id="clinic-finder-title">Find a clinic</h3>
+        <h3 id="clinic-finder-title">{t('Find a clinic')}</h3>
       </div>
 
       <form className="clinic-search" onSubmit={handleSearch}>
         <div className="clinic-search-fields">
           <label htmlFor="clinic-location-search">
-            City or postal code
+            {t('City or postal code')}
             <input
               id="clinic-location-search"
               type="search"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
-              placeholder="e.g. Ottawa or K1N 6N5"
+              placeholder={t('e.g. Ottawa or K1N 6N5')}
               maxLength={100}
               required
             />
-            <span className="field-hint">Prototype data covers Ottawa and postal prefixes K1N and K2G.</span>
+            <span className="field-hint">{t('Prototype data covers Ottawa and postal prefixes K1N and K2G.')}</span>
           </label>
 
           <label htmlFor="clinic-distance-search">
-            Maximum distance
+            {t('Maximum distance')}
             <select
               id="clinic-distance-search"
               value={maxDistanceKm}
@@ -131,7 +134,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
         </div>
 
         <fieldset className="clinic-service-filter">
-          <legend>Services</legend>
+          <legend>{t('Services')}</legend>
           {serviceOptions.length > 0 ? (
             <div className="clinic-filter-options">
               {serviceOptions.map((service) => (
@@ -146,7 +149,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
               ))}
             </div>
           ) : (
-            <p className="section-description">No clinic services are listed yet.</p>
+            <p className="section-description">{t('No clinic services are listed yet.')}</p>
           )}
         </fieldset>
 
@@ -157,7 +160,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
               checked={acceptingNewPatients}
               onChange={(event) => setAcceptingNewPatients(event.target.checked)}
             />
-            Accepting new patients
+            {t('Accepting new patients')}
           </label>
           <label className="clinic-checkbox">
             <input
@@ -165,16 +168,16 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
               checked={onlyWithAvailability}
               onChange={(event) => setOnlyWithAvailability(event.target.checked)}
             />
-            Only show clinics with available appointments
+            {t('Only show clinics with available appointments')}
           </label>
         </div>
 
         <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Searching…' : 'Search clinics'}
+          {isLoading ? t('Searching…') : t('Search clinics')}
         </button>
       </form>
 
-      {error && <p className="auth-error" role="alert">{error}</p>}
+      {error && <p className="auth-error" role="alert">{t(error)}</p>}
       {isLoading ? (
         <p role="status">Finding nearby clinics…</p>
       ) : clinics.length > 0 ? (
@@ -187,24 +190,32 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
               <article className={`clinic-card${isSelected ? ' selected' : ''}`} key={clinic.id}>
                 <div className="clinic-details">
                   <h4>{clinic.name}</h4>
+                  {clinic.listing_status === 'demo' ? (
+                    <p className="clinic-listing-note"><strong>{t('Demo listing:')}</strong> {t('synthetic prototype data, not a real clinic.')}</p>
+                  ) : (
+                    <p className="clinic-listing-note">
+                      {t('Verified from')} {clinic.source_name} {t('on')} {clinic.source_checked_on}
+                      {clinic.source_url && <> · <a href={clinic.source_url} target="_blank" rel="noreferrer">{t('View source')}</a></>}
+                    </p>
+                  )}
                   <p>{clinic.address}</p>
                   {locationLabel && <p>{locationLabel}</p>}
                   {clinic.description && <p>{clinic.description}</p>}
-                  {clinic.phone && <p>{clinic.phone}</p>}
-                  <p><strong>Approx. distance:</strong> {clinic.distance_km.toFixed(1)} km</p>
+                  {clinic.phone && <p><strong>{t('Phone:')}</strong> <a href={'tel:' + clinic.phone.replace(/[^+\d]/g, '')}>{clinic.phone}</a></p>}
+                  <p><strong>{t('Approx. distance:')}</strong> {clinic.distance_km.toFixed(1)} km</p>
                   <p>
-                    <strong>Services:</strong>{' '}
-                    {clinic.services.length > 0 ? clinic.services.join(', ') : 'Not listed'}
+                    <strong>{t('Services:')}</strong>{' '}
+                    {clinic.services.length > 0 ? clinic.services.join(', ') : t('Not listed')}
                   </p>
                   <p>
-                    <strong>New patients:</strong>{' '}
-                    {clinic.accepting_new_patients ? 'Accepted' : 'Not currently accepted'}
+                    <strong>{t('New patients:')}</strong>{' '}
+                    {clinic.accepting_new_patients ? t('Accepted') : t('Not currently accepted')}
                   </p>
                   <p>
-                    <strong>Next available:</strong>{' '}
+                    <strong>{t('Next available:')}</strong>{' '}
                     {clinic.next_available_at
-                      ? formatNextAvailable(clinic.next_available_at, clinic.time_zone)
-                      : 'No opening found in the next 60 days'}
+                      ? formatNextAvailable(clinic.next_available_at, clinic.time_zone, language)
+                      : t('No opening found in the next 60 days')}
                   </p>
                 </div>
                 <button
@@ -213,14 +224,14 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
                   aria-pressed={isSelected}
                   onClick={() => onSelectClinic(clinic)}
                 >
-                  {isSelected ? 'Selected' : 'Select clinic'}
+                  {isSelected ? t('Selected') : t('Select clinic')}
                 </button>
               </article>
             )
           })}
         </div>
       ) : (
-        <p>No clinics match these search options. Try a larger distance or remove a filter.</p>
+        <p>{t('No clinics match these search options. Try a larger distance or remove a filter.')}</p>
       )}
     </section>
   )

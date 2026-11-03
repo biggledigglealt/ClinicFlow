@@ -11,7 +11,8 @@ insert into public.clinics (
     description,
     services,
     accepting_new_patients,
-    is_active
+    is_active,
+    listing_status
 )
 values
     (
@@ -25,7 +26,8 @@ values
         'Synthetic clinic record for local development.',
         array['Family medicine', 'Walk-in']::text[],
         true,
-        true
+        true,
+        'demo'
     ),
     (
         'd0000000-0000-4000-8000-000000000002',
@@ -38,7 +40,8 @@ values
         'Synthetic clinic record for local development.',
         array['Family medicine']::text[],
         false,
-        true
+        true,
+        'demo'
     )
 on conflict (id) do update
 set
@@ -51,7 +54,8 @@ set
     description = excluded.description,
     services = excluded.services,
     accepting_new_patients = excluded.accepting_new_patients,
-    is_active = excluded.is_active;
+    is_active = excluded.is_active,
+    listing_status = excluded.listing_status;
 
 insert into private.clinic_search_origins (city, province, postal_fsa, latitude, longitude)
 values
@@ -130,5 +134,77 @@ values
     ('e4000000-0000-4000-8000-000000000003', 'e2000000-0000-4000-8000-000000000001', 3, '09:00', '17:00'),
     ('e4000000-0000-4000-8000-000000000004', 'e2000000-0000-4000-8000-000000000001', 4, '09:00', '17:00'),
     ('e4000000-0000-4000-8000-000000000005', 'e2000000-0000-4000-8000-000000000001', 5, '09:00', '17:00')
+on conflict (id) do update
+set opens_at = excluded.opens_at, closes_at = excluded.closes_at;
+
+-- A separate synthetic provider gives the West Ottawa demo clinic bookable slots.
+insert into auth.users (
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+)
+values (
+    'e0000000-0000-4000-8000-000000000002',
+    'authenticated',
+    'authenticated',
+    'clinicflow-west-provider@example.test',
+    '',
+    now(),
+    '{}'::jsonb,
+    '{}'::jsonb,
+    now(),
+    now()
+)
+on conflict do nothing;
+
+insert into public.staff_profiles (id, user_id, first_name, last_name, job_title)
+values (
+    'e1000000-0000-4000-8000-000000000002',
+    'e0000000-0000-4000-8000-000000000002',
+    'Jordan',
+    'Demo',
+    'Synthetic local provider'
+)
+on conflict (id) do update
+set
+    first_name = excluded.first_name,
+    last_name = excluded.last_name,
+    job_title = excluded.job_title;
+
+insert into public.clinic_memberships (id, clinic_id, staff_id, role, is_active)
+values (
+    'e2000000-0000-4000-8000-000000000002',
+    'd0000000-0000-4000-8000-000000000002',
+    'e1000000-0000-4000-8000-000000000002',
+    'staff',
+    true
+)
+on conflict (clinic_id, staff_id) do update
+set role = excluded.role, is_active = excluded.is_active;
+
+insert into public.clinic_hours (id, clinic_id, day_of_week, opens_at, closes_at)
+values
+    ('e3000000-0000-4000-8000-000000000006', 'd0000000-0000-4000-8000-000000000002', 1, '09:00', '17:00'),
+    ('e3000000-0000-4000-8000-000000000007', 'd0000000-0000-4000-8000-000000000002', 2, '09:00', '17:00'),
+    ('e3000000-0000-4000-8000-000000000008', 'd0000000-0000-4000-8000-000000000002', 3, '09:00', '17:00'),
+    ('e3000000-0000-4000-8000-000000000009', 'd0000000-0000-4000-8000-000000000002', 4, '09:00', '17:00'),
+    ('e3000000-0000-4000-8000-000000000010', 'd0000000-0000-4000-8000-000000000002', 5, '09:00', '17:00')
+on conflict (id) do update
+set opens_at = excluded.opens_at, closes_at = excluded.closes_at;
+
+insert into public.staff_hours (id, membership_id, day_of_week, opens_at, closes_at)
+values
+    ('e4000000-0000-4000-8000-000000000006', 'e2000000-0000-4000-8000-000000000002', 1, '09:00', '17:00'),
+    ('e4000000-0000-4000-8000-000000000007', 'e2000000-0000-4000-8000-000000000002', 2, '09:00', '17:00'),
+    ('e4000000-0000-4000-8000-000000000008', 'e2000000-0000-4000-8000-000000000002', 3, '09:00', '17:00'),
+    ('e4000000-0000-4000-8000-000000000009', 'e2000000-0000-4000-8000-000000000002', 4, '09:00', '17:00'),
+    ('e4000000-0000-4000-8000-000000000010', 'e2000000-0000-4000-8000-000000000002', 5, '09:00', '17:00')
 on conflict (id) do update
 set opens_at = excluded.opens_at, closes_at = excluded.closes_at;

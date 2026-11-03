@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { getPatientProfile, savePatientProfile, type PatientProfile } from '../services/patientService'
+import { useTranslate } from '../lib/i18n'
 
 interface PatientProfilePanelProps {
   userId: string
@@ -7,6 +8,7 @@ interface PatientProfilePanelProps {
 }
 
 export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePanelProps) {
+  const t = useTranslate()
   const [profile, setProfile] = useState<PatientProfile | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -31,7 +33,7 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
       .catch((loadError: unknown) => {
         if (isCurrent) {
           onProfileReady(false)
-          setError(loadError instanceof Error ? loadError.message : 'Could not load your profile.')
+          setError(t(loadError instanceof Error ? loadError.message : 'Could not load your profile.'))
         }
       })
       .finally(() => {
@@ -41,7 +43,7 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
     return () => {
       isCurrent = false
     }
-  }, [userId, onProfileReady])
+  }, [userId, onProfileReady, t])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -60,9 +62,9 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
       setLastName(savedProfile.last_name)
       setPhone(savedProfile.phone ?? '')
       onProfileReady(true)
-      setMessage('Your booking profile is saved.')
+      setMessage(t('Your booking profile is saved.'))
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Could not save your profile.')
+      setError(t(saveError instanceof Error ? saveError.message : 'Could not save your profile.'))
     } finally {
       setIsSaving(false)
     }
@@ -72,20 +74,20 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
     <section className="panel profile-panel" aria-labelledby="patient-profile-title">
       <div className="panel-header">
         <h3 id="patient-profile-title">
-          {profile ? 'Patient profile' : 'Complete your booking profile'}
+          {t(profile ? 'Patient profile' : 'Complete your booking profile')}
         </h3>
       </div>
 
       {isLoading ? (
-        <p role="status">Loading your profile…</p>
+        <p role="status">{t('Loading your profile…')}</p>
       ) : (
         <>
           <p className="section-description">
-            We only ask for the contact details needed to manage appointments. Date of birth is not required.
+            {t('We only ask for the contact details needed to manage appointments. Date of birth is not required.')}
           </p>
           <form className="profile-form" onSubmit={handleSubmit}>
             <label>
-              First name
+              {t('First name')}
               <input
                 name="firstName"
                 autoComplete="given-name"
@@ -96,7 +98,7 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
               />
             </label>
             <label>
-              Last name
+              {t('Last name')}
               <input
                 name="lastName"
                 autoComplete="family-name"
@@ -107,7 +109,7 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
               />
             </label>
             <label>
-              Phone <span className="input-hint">Optional</span>
+              {t('Phone')} <span className="input-hint">{t('Optional')}</span>
               <input
                 type="tel"
                 name="phone"
@@ -122,7 +124,7 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
             {message && <p className="auth-message" role="status">{message}</p>}
 
             <button type="submit" className="primary-button" disabled={isSaving}>
-              {isSaving ? 'Saving…' : profile ? 'Update profile' : 'Save profile'}
+              {t(isSaving ? 'Saving…' : profile ? 'Update profile' : 'Save profile')}
             </button>
           </form>
         </>

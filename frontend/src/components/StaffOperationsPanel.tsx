@@ -18,7 +18,9 @@ import {
   type ClinicAnnouncement,
   type ClinicAppointment,
   type ClinicMembership,
+  type ScheduleInterval,
 } from '../services/operationsService'
+import { useLanguage, useTranslate } from '../lib/i18n'
 
 const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -59,11 +61,76 @@ function localDateTimeToIso(value: string, timeZone: string) {
   return new Date(candidate).toISOString()
 }
 
-function formatClinicTime(value: string, timeZone: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(new Date(value))
+function formatClinicTime(value: string, timeZone: string, language: 'en' | 'fr') {
+  return new Intl.DateTimeFormat(language === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(new Date(value))
+}
+
+function validateScheduleIntervals(intervals: ScheduleInterval[]) {
+  const sorted = [...intervals].sort((left, right) => left.opensAt.localeCompare(right.opensAt))
+  for (let index = 0; index < sorted.length; index += 1) {
+    const interval = sorted[index]
+    if (!interval.opensAt || !interval.closesAt || interval.closesAt <= interval.opensAt) {
+      return 'Each interval needs a start time before its end time.'
+    }
+    if (index > 0 && sorted[index - 1].closesAt > interval.opensAt) {
+      return 'Schedule intervals cannot overlap.'
+    }
+  }
+  if (sorted.length > 12) return 'Add no more than 12 intervals to one day.'
+  return ''
+}
+
+function ScheduleIntervalEditor({
+  title,
+  intervals,
+  onChange,
+  disabled,
+}: {
+  title: string
+  intervals: ScheduleInterval[]
+  onChange: (intervals: ScheduleInterval[]) => void
+  disabled: boolean
+}) {
+  const t = useTranslate()
+  return (
+    <fieldset className="schedule-interval-editor">
+      <legend>{t(title)}</legend>
+      {intervals.length === 0 && <p className="input-hint">{t('No hours set for this day.')}</p>}
+      <div className="schedule-interval-list">
+        {intervals.map((interval, index) => (
+          <div className="schedule-interval-row" key={index}>
+            <label>
+              {t('Opens')}
+              <input type="time" value={interval.opensAt} required disabled={disabled}
+                onChange={(event) => onChange(intervals.map((current, currentIndex) => currentIndex === index
+                  ? { ...current, opensAt: event.target.value }
+                  : current))} />
+            </label>
+            <label>
+              {t('Closes')}
+              <input type="time" value={interval.closesAt} required disabled={disabled}
+                onChange={(event) => onChange(intervals.map((current, currentIndex) => currentIndex === index
+                  ? { ...current, closesAt: event.target.value }
+                  : current))} />
+            </label>
+            <button type="button" className="text-button" disabled={disabled}
+              onClick={() => onChange(intervals.filter((_, currentIndex) => currentIndex !== index))}>
+              {t('Remove interval')}
+            </button>
+          </div>
+        ))}
+      </div>
+      <button type="button" className="text-button" disabled={disabled}
+        onClick={() => onChange([...intervals, { opensAt: '09:00', closesAt: '17:00' }])}>
+        {t('Add interval')}
+      </button>
+    </fieldset>
+  )
 }
 
 export function StaffOperationsPanel({ userId }: { userId: string }) {
+  const t = useTranslate()
+  const language = useLanguage()
   const [memberships, setMemberships] = useState<ClinicMembership[]>([])
   const [selectedMembershipId, setSelectedMembershipId] = useState('')
   const [date, setDate] = useState('')
@@ -71,10 +138,8 @@ export function StaffOperationsPanel({ userId }: { userId: string }) {
   const [announcements, setAnnouncements] = useState<ClinicAnnouncement[]>([])
   const [blocks, setBlocks] = useState<Array<{ id: string; staff_id: string | null; starts_at: string; ends_at: string; reason: string }>>([])
   const [day, setDay] = useState(1)
-  const [clinicOpens, setClinicOpens] = useState('09:00')
-  const [clinicCloses, setClinicCloses] = useState('17:00')
-  const [staffOpens, setStaffOpens] = useState('09:00')
-  const [staffCloses, setStaffCloses] = useState('17:00')
+  const [clinicIntervals, setClinicIntervals] = useState<ScheduleInterval[]>([])
+  const [staffIntervals, setStaffIntervals] = useState<ScheduleInterval[]>([])
   const [duration, setDuration] = useState(30)
   const [blockStart, setBlockStart] = useState('')
   const [blockEnd, setBlockEnd] = useState('')
@@ -135,10 +200,14 @@ export function StaffOperationsPanel({ userId }: { userId: string }) {
       setAppointments(clinicAppointments)
       setAnnouncements(clinicAnnouncements)
       setBlocks(scheduleBlocks)
-      setClinicOpens(clinicHours[0]?.opens_at?.slice(0, 5) ?? '')
-      setClinicCloses(clinicHours[0]?.closes_at?.slice(0, 5) ?? '')
-      setStaffOpens(staffHours[0]?.opens_at?.slice(0, 5) ?? '')
-      setStaffCloses(staffHours[0]?.closes_at?.slice(0, 5) ?? '')
+      setClinicIntervals(clinicHours.map((interval) => ({
+        opensAt: interval.opens_at.slice(0, 5),
+        closesAt: interval.closes_at.slice(0, 5),
+      })))
+      setStaffIntervals(staffHours.map((interval) => ({
+        opensAt: interval.opens_at.slice(0, 5),
+        closesAt: interval.closes_at.slice(0, 5),
+      })))
     }).catch((loadError: unknown) => {
       if (active) setError(loadError instanceof Error ? loadError.message : 'Could not load clinic operations.')
     })
@@ -167,9 +236,9 @@ export function StaffOperationsPanel({ userId }: { userId: string }) {
     try {
       await action()
       await refreshClinicData()
-      setMessage(success)
+      setMessage(t(success))
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'The operation failed.')
+      setError(t(actionError instanceof Error ? actionError.message : 'The operation failed.'))
     } finally {
       setSaving(false)
     }
@@ -178,11 +247,19 @@ export function StaffOperationsPanel({ userId }: { userId: string }) {
   async function saveSchedules(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!membership || !clinic) return
+    const staffScheduleError = validateScheduleIntervals(staffIntervals)
+    const clinicScheduleError = membership.role === 'admin'
+      ? validateScheduleIntervals(clinicIntervals)
+      : ''
+    if (staffScheduleError || clinicScheduleError) {
+      setError(t(staffScheduleError || clinicScheduleError))
+      return
+    }
     await runAction(async () => {
       await Promise.all([
-        setMyStaffHours(membership.id, day, staffOpens || null, staffCloses || null),
+        setMyStaffHours(membership.id, day, staffIntervals),
         ...(membership.role === 'admin'
-          ? [setClinicHours(clinic.id, day, clinicOpens || null, clinicCloses || null)]
+          ? [setClinicHours(clinic.id, day, clinicIntervals)]
           : []),
       ])
     }, 'Recurring schedule saved.')
@@ -235,10 +312,10 @@ export function StaffOperationsPanel({ userId }: { userId: string }) {
 
   return (
     <section className="panel staff-operations-panel" aria-labelledby="staff-operations-title">
-      <div className="panel-header"><h3 id="staff-operations-title">Clinic staff operations</h3></div>
+      <div className="panel-header"><h3 id="staff-operations-title">{t('Clinic staff operations')}</h3></div>
       {memberships.length > 1 && (
         <label className="staff-filter">
-          Clinic
+          {t('Clinic')}
           <select value={selectedMembershipId} onChange={(event) => {
             const next = memberships.find((item) => item.id === event.target.value)
             setSelectedMembershipId(event.target.value)
@@ -251,29 +328,29 @@ export function StaffOperationsPanel({ userId }: { userId: string }) {
       {!clinic || !membership ? <p className="auth-error">This staff membership has no active clinic.</p> : (
         <>
           <div className="staff-filter">
-            <label htmlFor="staff-date">Schedule date</label>
+            <label htmlFor="staff-date">{t('Schedule date')}</label>
             <input id="staff-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
           </div>
-          <h4>Appointments</h4>
-          {appointments.length === 0 ? <p className="section-description">No appointments for this date.</p> : (
+          <h4>{t('Appointments')}</h4>
+          {appointments.length === 0 ? <p className="section-description">{t('No appointments for this date.')}</p> : (
             <ul className="staff-appointment-list">
               {appointments.map((appointment) => (
                 <li key={appointment.id}>
                   <div>
-                    <strong>{formatClinicTime(appointment.start_at, clinic.time_zone)} – {formatClinicTime(appointment.end_at, clinic.time_zone)}</strong>
+                    <strong>{formatClinicTime(appointment.start_at, clinic.time_zone, language)} – {formatClinicTime(appointment.end_at, clinic.time_zone, language)}</strong>
                     <span>{appointment.patient_first_name} {appointment.patient_last_name} · {appointment.staff_first_name} {appointment.staff_last_name}</span>
-                    <span>Status: {appointment.status}{appointment.checked_in_at ? ' · Checked in' : ''}</span>
+                    <span>{t('Status:')} {t(appointment.status)}{appointment.checked_in_at ? ` · ${t('Checked in')}` : ''}</span>
                   </div>
                   {['booked', 'confirmed'].includes(appointment.status) && (
                     <div className="staff-row-actions">
                       {!appointment.checked_in_at && <button type="button" className="text-button" disabled={saving}
-                        onClick={() => void runAction(() => checkInAppointment(appointment.id), 'Patient checked in.')}>Check in</button>}
+                        onClick={() => void runAction(() => checkInAppointment(appointment.id), 'Patient checked in.')}>{t('Check in')}</button>}
                       <button type="button" className="text-button" disabled={saving}
-                        onClick={() => void runAction(() => cancelAppointment(appointment.id), 'Appointment cancelled.')}>Cancel</button>
+                        onClick={() => void runAction(() => cancelAppointment(appointment.id), 'Appointment cancelled.')}>{t('Cancel')}</button>
                       <button type="button" className="text-button" disabled={saving}
-                        onClick={() => void runAction(() => setAppointmentStatus(appointment.id, 'completed'), 'Appointment marked completed.')}>Complete</button>
+                        onClick={() => void runAction(() => setAppointmentStatus(appointment.id, 'completed'), 'Appointment marked completed.')}>{t('Complete')}</button>
                       <button type="button" className="text-button" disabled={saving}
-                        onClick={() => void runAction(() => setAppointmentStatus(appointment.id, 'no_show'), 'Appointment marked no-show.')}>No-show</button>
+                        onClick={() => void runAction(() => setAppointmentStatus(appointment.id, 'no_show'), 'Appointment marked no-show.')}>{t('No-show')}</button>
                     </div>
                   )}
                 </li>
@@ -281,66 +358,70 @@ export function StaffOperationsPanel({ userId }: { userId: string }) {
             </ul>
           )}
 
-          <h4>Recurring schedule</h4>
+          <h4>{t('Recurring schedule')}</h4>
           <form className="operations-form" onSubmit={saveSchedules}>
-            <label>Day of week<select value={day} onChange={(event) => setDay(Number(event.target.value))}>
-              {weekdays.map((name, index) => <option key={name} value={index}>{name}</option>)}
+            <label>{t('Day of week')}<select value={day} onChange={(event) => setDay(Number(event.target.value))}>
+              {weekdays.map((name, index) => <option key={name} value={index}>{t(name)}</option>)}
             </select></label>
-            {membership.role === 'admin' && <div className="operations-time-pair">
-              <label>Clinic opens<input type="time" value={clinicOpens} onChange={(event) => setClinicOpens(event.target.value)} /></label>
-              <label>Clinic closes<input type="time" value={clinicCloses} onChange={(event) => setClinicCloses(event.target.value)} /></label>
-            </div>}
-            <div className="operations-time-pair">
-              <label>Your availability starts<input type="time" value={staffOpens} onChange={(event) => setStaffOpens(event.target.value)} /></label>
-              <label>Your availability ends<input type="time" value={staffCloses} onChange={(event) => setStaffCloses(event.target.value)} /></label>
-            </div>
-            <p className="input-hint">Leave both times blank to mark that day unavailable. This prototype supports one recurring interval per day.</p>
-            <button type="submit" className="confirm-button" disabled={saving}>Save schedule</button>
+            {membership.role === 'admin' && <ScheduleIntervalEditor
+              title="Clinic hours"
+              intervals={clinicIntervals}
+              onChange={setClinicIntervals}
+              disabled={saving}
+            />}
+            <ScheduleIntervalEditor
+              title="Your availability"
+              intervals={staffIntervals}
+              onChange={setStaffIntervals}
+              disabled={saving}
+            />
+            <p className="input-hint">{t('Use separate intervals for split shifts. Remove all intervals to close the day.')}</p>
+            <button type="submit" className="confirm-button" disabled={saving}>{t('Save schedule')}</button>
           </form>
 
           {membership.role === 'admin' && <form className="operations-form" onSubmit={saveDuration}>
-            <label>Appointment length<select value={duration} onChange={(event) => setDuration(Number(event.target.value))}>
-              {[15, 30, 45, 60, 75, 90, 120].map((minutes) => <option key={minutes} value={minutes}>{minutes} minutes</option>)}
+            <label>{t('Appointment length')}<select value={duration} onChange={(event) => setDuration(Number(event.target.value))}>
+              {[15, 30, 45, 60, 75, 90, 120].map((minutes) => <option key={minutes} value={minutes}>{minutes} {t('minutes')}</option>)}
             </select></label>
-            <button type="submit" className="confirm-button" disabled={saving}>Save appointment length</button>
+            <button type="submit" className="confirm-button" disabled={saving}>{t('Save appointment length')}</button>
           </form>}
 
-          <h4>Unavailable time</h4>
+          <h4>{t('Unavailable time')}</h4>
           <form className="operations-form" onSubmit={saveBlock}>
-            <label>Reason<select value={blockReason} onChange={(event) => setBlockReason(event.target.value as typeof blockReason)}>
-              <option value="unavailable">Unavailable</option><option value="closure">Clinic closure</option>
-              <option value="break">Break</option><option value="other">Other</option>
+            <label>{t('Reason')}<select value={blockReason} onChange={(event) => setBlockReason(event.target.value as typeof blockReason)}>
+              <option value="unavailable">{t('Unavailable')}</option><option value="closure">{t('Clinic closure')}</option>
+              <option value="break">{t('Break')}</option><option value="other">{t('Other')}</option>
             </select></label>
             <div className="operations-time-pair">
-              <label>Starts<input type="datetime-local" value={blockStart} onChange={(event) => setBlockStart(event.target.value)} required /></label>
-              <label>Ends<input type="datetime-local" value={blockEnd} onChange={(event) => setBlockEnd(event.target.value)} required /></label>
+              <label>{t('Starts')}<input type="datetime-local" value={blockStart} onChange={(event) => setBlockStart(event.target.value)} required /></label>
+              <label>{t('Ends')}<input type="datetime-local" value={blockEnd} onChange={(event) => setBlockEnd(event.target.value)} required /></label>
             </div>
-            <p className="input-hint">Times are interpreted in {clinic.time_zone}. Administrators add clinic-wide blocks; staff add blocks for their own schedule.</p>
-            <button type="submit" className="confirm-button" disabled={saving}>Add unavailable time</button>
+            <p className="input-hint">{t('Times are interpreted in')} {clinic.time_zone}. {t('Administrators add clinic-wide blocks; staff add blocks for their own schedule.')}</p>
+            <button type="submit" className="confirm-button" disabled={saving}>{t('Add unavailable time')}</button>
           </form>
           {blocks.length > 0 && <ul className="staff-appointment-list">
             {blocks.map((block) => <li key={block.id}>
-              <div><strong>{formatClinicTime(block.starts_at, clinic.time_zone)} – {formatClinicTime(block.ends_at, clinic.time_zone)}</strong><span>{block.reason}{block.staff_id ? ' · staff' : ' · clinic'}</span></div>
+              <div><strong>{formatClinicTime(block.starts_at, clinic.time_zone, language)} – {formatClinicTime(block.ends_at, clinic.time_zone, language)}</strong><span>{t(block.reason)}{block.staff_id ? ` · ${t('staff')}` : ` · ${t('clinic')}`}</span></div>
               {(membership.role === 'admin' || block.staff_id === membership.staff_id) && <button className="text-button" type="button" disabled={saving}
-                onClick={() => void runAction(() => deleteScheduleBlock(block.id), 'Unavailable time removed.')}>Remove</button>}
+                onClick={() => void runAction(() => deleteScheduleBlock(block.id), 'Unavailable time removed.')}>{t('Remove')}</button>}
             </li>)}
           </ul>}
 
           {membership.role === 'admin' && <>
-            <h4>Publish a clinic announcement</h4>
+            <h4>{t('Publish a clinic announcement')}</h4>
             <form className="operations-form" onSubmit={saveAnnouncement}>
-              <label>Title<input value={announcementTitle} onChange={(event) => setAnnouncementTitle(event.target.value)} maxLength={120} required /></label>
-              <label>Message<textarea value={announcementMessage} onChange={(event) => setAnnouncementMessage(event.target.value)} maxLength={1000} required /></label>
-              <p className="input-hint">Keep the announcement operational and generic. Do not include patient names or clinical details.</p>
-              <label>Optional expiry date<input type="date" value={announcementExpiry} onChange={(event) => setAnnouncementExpiry(event.target.value)} /></label>
-              <button type="submit" className="confirm-button" disabled={saving}>Publish announcement</button>
+              <label>{t('Title')}<input value={announcementTitle} onChange={(event) => setAnnouncementTitle(event.target.value)} maxLength={120} required /></label>
+              <label>{t('Message')}<textarea value={announcementMessage} onChange={(event) => setAnnouncementMessage(event.target.value)} maxLength={1000} required /></label>
+              <p className="input-hint">{t('Keep the announcement operational and generic. Do not include patient names or clinical details.')}</p>
+              <label>{t('Optional expiry date')}<input type="date" value={announcementExpiry} onChange={(event) => setAnnouncementExpiry(event.target.value)} /></label>
+              <button type="submit" className="confirm-button" disabled={saving}>{t('Publish announcement')}</button>
             </form>
           </>}
           {announcements.length > 0 && <p className="input-hint">Published announcements: {announcements.map((item) => item.title).join(', ')}</p>}
         </>
       )}
-      {error && <p className="auth-error" role="alert">{error}</p>}
-      {message && <p className="auth-message" role="status">{message}</p>}
+      {error && <p className="auth-error" role="alert">{t(error)}</p>}
+      {message && <p className="auth-message" role="status">{t(message)}</p>}
     </section>
   )
 }

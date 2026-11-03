@@ -5,6 +5,7 @@ import {
   saveAccessibilityPreferences,
   type AccessibilityPreferences,
 } from '../services/operationsService'
+import { useTranslate } from '../lib/i18n'
 
 interface AccessibilitySettingsPanelProps {
   userId: string
@@ -12,6 +13,7 @@ interface AccessibilitySettingsPanelProps {
 }
 
 export function AccessibilitySettingsPanel({ userId, onPreferencesChange }: AccessibilitySettingsPanelProps) {
+  const t = useTranslate()
   const [preferences, setPreferences] = useState(defaultAccessibilityPreferences)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -27,11 +29,11 @@ export function AccessibilitySettingsPanel({ userId, onPreferencesChange }: Acce
         onPreferencesChange(saved)
       })
       .catch((loadError: unknown) => {
-        if (active) setError(loadError instanceof Error ? loadError.message : 'Could not load preferences.')
+        if (active) setError(t(loadError instanceof Error ? loadError.message : 'Could not load preferences.'))
       })
       .finally(() => { if (active) setIsLoading(false) })
     return () => { active = false }
-  }, [userId, onPreferencesChange])
+  }, [userId, onPreferencesChange, t])
 
   function update<K extends keyof AccessibilityPreferences>(key: K, value: AccessibilityPreferences[K]) {
     setPreferences((current) => ({ ...current, [key]: value }))
@@ -46,9 +48,9 @@ export function AccessibilitySettingsPanel({ userId, onPreferencesChange }: Acce
     try {
       await saveAccessibilityPreferences(userId, preferences)
       onPreferencesChange(preferences)
-      setMessage('Accessibility preferences saved.')
+      setMessage(t('Accessibility preferences saved.'))
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Could not save preferences.')
+      setError(t(saveError instanceof Error ? saveError.message : 'Could not save preferences.'))
     } finally {
       setIsSaving(false)
     }
@@ -56,7 +58,7 @@ export function AccessibilitySettingsPanel({ userId, onPreferencesChange }: Acce
 
   function speakExample() {
     if (!('speechSynthesis' in window)) {
-      setError('Text-to-speech is not available in this browser.')
+      setError(t('Text-to-speech is not available in this browser.'))
       return
     }
     window.speechSynthesis.cancel()
@@ -71,47 +73,47 @@ export function AccessibilitySettingsPanel({ userId, onPreferencesChange }: Acce
 
   return (
     <section className="panel" id="accessibility-panel" aria-labelledby="accessibility-title">
-      <div className="panel-header"><h3 id="accessibility-title">Accessibility settings</h3></div>
-      {isLoading ? <p role="status">Loading preferences…</p> : (
+      <div className="panel-header"><h3 id="accessibility-title">{t('Accessibility settings')}</h3></div>
+      {isLoading ? <p role="status">{t('Loading preferences…')}</p> : (
         <form className="settings-form" onSubmit={handleSubmit}>
           <label>
-            Language
+            {t('Language')}
             <select value={preferences.language} onChange={(event) => update('language', event.target.value as 'en' | 'fr')}>
-              <option value="en">English</option>
+              <option value="en">{t('English')}</option>
               <option value="fr">Français</option>
             </select>
           </label>
           <label>
-            Text size
+            {t('Text size')}
             <select
               value={preferences.text_size}
               onChange={(event) => update('text_size', event.target.value as AccessibilityPreferences['text_size'])}
             >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-              <option value="extra_large">Extra large</option>
+              <option value="small">{t('Small')}</option>
+              <option value="medium">{t('Medium')}</option>
+              <option value="large">{t('Large')}</option>
+              <option value="extra_large">{t('Extra large')}</option>
             </select>
           </label>
           <label className="clinic-checkbox">
             <input type="checkbox" checked={preferences.high_contrast}
               onChange={(event) => update('high_contrast', event.target.checked)} />
-            High contrast
+            {t('High contrast')}
           </label>
           <label className="clinic-checkbox">
             <input type="checkbox" checked={preferences.text_to_speech}
               onChange={(event) => update('text_to_speech', event.target.checked)} />
-            Enable text-to-speech
+            {t('Enable text-to-speech')}
           </label>
           {error && <p className="auth-error" role="alert">{error}</p>}
           {message && <p className="auth-message" role="status">{message}</p>}
           <div className="settings-actions">
             <button type="submit" className="primary-button" disabled={isSaving}>
-              {isSaving ? 'Saving…' : 'Save preferences'}
+              {t(isSaving ? 'Saving…' : 'Save preferences')}
             </button>
-            {preferences.text_to_speech && <button type="button" className="text-button" onClick={speakExample}>Read a sample</button>}
+            {preferences.text_to_speech && <button type="button" className="text-button" onClick={speakExample}>{t('Read a sample')}</button>}
           </div>
-          <p className="input-hint">Language choice is saved; full French translation of the prototype interface is still in progress.</p>
+          <p className="input-hint">{t('French labels are available. Clinic and staff-entered information appears in its original language.')}</p>
         </form>
       )}
     </section>
