@@ -46,19 +46,11 @@ Supabase with PostgreSQL is the current development target. The repository inclu
 
 A terminal transcript in the in-progress deliverable reports a hosted link and migration push, but the current remote state has not been verified. Ask the project owner to confirm the linked project and migration history before any hosted database action. Never put a service-role or secret key in the frontend. The publishable key is public and belongs only in the ignored `frontend/.env.local` file.
 
-For local database work, install the root CLI and frontend packages, then run the local Supabase services (Docker required):
+For local database features, each teammate runs a separate Supabase database on their own computer; local records are not shared. Install and start Docker Desktop, install Node.js 22.12 or newer, then install dependencies from the repository root with `npm.cmd run setup` in Windows PowerShell or `npm run setup` in macOS Terminal.
 
-```sh
-npm ci
-npm ci --prefix frontend
-npm run db:start
-npm run db:migrate
-npm run db:test
-```
+Start Supabase once to print its local API URL and publishable key: run `npm.cmd run db:start` in Windows PowerShell or `npm run db:start` in macOS Terminal. Copy `frontend/.env.example` to `frontend/.env.local`, set `VITE_SUPABASE_URL` to `http://127.0.0.1:54321`, and set `VITE_SUPABASE_PUBLISHABLE_KEY` to the publishable key from the CLI output. Never put a secret or service-role key in the frontend. The ignored `.env.local` file stays on that computer.
 
-In Windows PowerShell, run these as `npm.cmd` commands (for example, `npm.cmd run db:start`).
-
-Set `frontend/.env.local` from the local API URL and publishable key shown by `npm run db:start`. In Codespaces, use the forwarded HTTPS URL for port `54321`, and use the forwarded frontend URL for auth redirects. Stop local services with `npm run db:stop`. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
+Then launch the database-backed app with `npm.cmd run prototype` on Windows or `npm run prototype` on macOS. This starts Supabase, applies migrations and synthetic seed data, and opens the app without resetting local accounts. Supabase Studio is at `http://127.0.0.1:54323`; Mailpit is at `http://127.0.0.1:54324`. Stop Supabase with `npm.cmd run db:stop` on Windows or `npm run db:stop` on macOS. In Codespaces, use the forwarded URL for port `54321` and the forwarded frontend URL for auth redirects. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
 
 Use `db:migrate` to apply pending migrations without resetting local accounts. `db:reset` removes locally created Auth users and database records before applying migrations and synthetic clinic, provider, and schedule records from `supabase/seed.sql`; run it only when you intentionally want a clean local database. Use `db:test` to rerun database checks without resetting local accounts.
 

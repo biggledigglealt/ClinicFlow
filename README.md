@@ -47,29 +47,33 @@ Use Supabase Auth for identity and sessions. Do not create application passwords
 
 ### Local database setup
 
-For a one-command local prototype launch on Windows, run **npm.cmd run prototype** from the repository root. It starts Supabase, applies pending migrations, reapplies the idempotent synthetic seed data, starts Vite, and opens the app in your browser. It uses the existing **frontend/.env.local** settings and does not reset local accounts. Press **Ctrl+C** to stop Vite; use **npm.cmd run db:stop** to stop Supabase.
+Each teammate gets a separate local database on their own computer; local records are not shared between teammates. Install and start Docker Desktop, then install Node.js 22.12 or newer. From the repository root, install dependencies once with `npm.cmd run setup` in Windows PowerShell or `npm run setup` in macOS Terminal.
 
-Install the repository tooling and frontend dependencies:
-
-```sh
-npm ci
-npm ci --prefix frontend
-```
-
-Docker is required to run the local Supabase services. Then use:
+Start Supabase once to create the local services and print the API URL and publishable key:
 
 ```sh
+# Windows PowerShell
+npm.cmd run db:start
+
+# macOS Terminal
 npm run db:start
-npm run db:migrate
-npm run db:reset
-npm run db:test
 ```
 
-In Windows PowerShell, use `npm.cmd` for these commands (for example, `npm.cmd run db:start`).
+Copy `frontend/.env.example` to `frontend/.env.local`. Set `VITE_SUPABASE_URL` to `http://127.0.0.1:54321` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the publishable key printed by `db:start`. Use only that publishable key in the frontend, never a secret or service-role key. `.env.local` is ignored by Git.
 
-Copy `frontend/.env.example` to `frontend/.env.local` and set the local API URL and publishable key printed by `npm run db:start`. In Codespaces, use the forwarded URL for port `54321` instead of `localhost`; the frontend auth redirect uses the forwarded port `5173`. `.env.local` is ignored by Git. Stop local services with `npm run db:stop`.
+After saving `.env.local`, start the database-backed app with one command from the repository root:
 
-Use `npm run db:migrate` to apply new schema changes while preserving local accounts and data. `npm run db:reset` recreates the local database, removes locally created Auth users and data, then loads synthetic clinic, provider, and schedule records from `supabase/seed.sql`.
+```sh
+# Windows PowerShell
+npm.cmd run prototype
+
+# macOS Terminal
+npm run prototype
+```
+
+This starts Supabase, applies pending migrations, adds synthetic seed data, and opens the app. It preserves local accounts and data. Supabase Studio is at `http://127.0.0.1:54323`; local confirmation and notification emails can be viewed in Mailpit at `http://127.0.0.1:54324`. Press **Ctrl+C** to stop the app, then run `npm.cmd run db:stop` on Windows or `npm run db:stop` on macOS to stop Supabase.
+
+Use `npm.cmd run db:migrate` on Windows or `npm run db:migrate` on macOS to apply schema changes without resetting local accounts. `db:reset` deletes local Auth users and database records before loading synthetic records; use it only when you intend to clear local data. In Codespaces, use the forwarded URL for port `54321` instead of `127.0.0.1`, and use the forwarded frontend URL for auth redirects.
 
 Email confirmation is enabled in local Auth. Test it through the frontend signup form; creating a user from Studio's Users page is administrative provisioning and may bypass signup verification. Local confirmation messages are captured by Mailpit at `http://127.0.0.1:54324`; local email is not delivered to external inboxes. The signup screen provides a resend action. For the hosted project, enable email confirmation, set the allowed Auth redirect URLs, and configure an SMTP provider before expecting real verification emails.
 
