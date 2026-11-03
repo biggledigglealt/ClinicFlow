@@ -4,29 +4,27 @@ ClinicFlow is a team project for clinic scheduling and clinic operations. It is 
 
 ## New to GitHub or coding? Start here
 
-You do not need to install coding tools on your own computer. Use GitHub Codespaces to open the project in a browser-based VS Code environment. Follow the [first-day team onboarding guide](docs/TEAM_ONBOARDING.md) for step-by-step instructions on starting the project, finding your assigned work, and sharing changes with teammates.
+You do not need to install coding tools on your own computer. Use GitHub Codespaces to open the project in a browser-based VS Code environment. Follow the [first-day team onboarding guide](docs/TEAM_ONBOARDING.md) for help finding your assigned work and sharing changes with teammates.
 
 ### Start the app in Codespaces
 
 1. [Create your own Codespace on `main`](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main). If your team lead has asked you to use a different branch, choose that branch instead.
 2. Alternatively, open this repository on GitHub, select the green **Code** button, then the **Codespaces** tab and select **Create codespace on main**.
-3. Wait for the Codespace to finish setting up. It installs the Supabase CLI and frontend dependencies for you.
+3. Wait for setup to finish. Codespaces installs Node.js and the project dependencies automatically.
 4. In VS Code, open **Terminal → New Terminal**. A terminal is where you type commands for the project.
 5. Copy and run:
 
    ```sh
-   npm --prefix frontend run dev -- --host 0.0.0.0
+   npm run dev
    ```
 
 6. When Codespaces shows that port `5173` is ready, select **Open in Browser** to see the app. Keep the terminal running while you use the app. To stop it, click the terminal and press `Ctrl+C`.
 
-If you are not using Codespaces, install Node.js 22.12 or newer and npm first, then run:
+The Codespace runs the project in a Linux container, so the computer you use to access it does not change the setup. The same steps work from a Windows Intel laptop and a MacBook with Apple silicon.
 
-```sh
-npm ci
-npm ci --prefix frontend
-npm --prefix frontend run dev
-```
+### Run from your own computer instead
+
+For a local setup, install Node.js 22.12 or newer from [nodejs.org](https://nodejs.org/); npm is included with Node.js. Then, from the repository root, install the dependencies once with `npm run setup` and start the app with `npm run dev`. In Windows PowerShell, use `npm.cmd run setup` and `npm.cmd run dev` if PowerShell blocks the `npm` command. On macOS, use `npm run setup` and `npm run dev` in Terminal. npm automatically installs packages for the computer's operating system and processor.
 
 ## Who is working on what?
 

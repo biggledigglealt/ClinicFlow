@@ -2,6 +2,8 @@
   "name": "clinicflow",
   "private": true,
   "scripts": {
+    "setup": "npm ci && npm ci --prefix frontend",
+    "dev": "npm --prefix frontend run dev -- --host 0.0.0.0",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:migrate": "supabase migration up --local",
@@ -13,7 +15,7 @@
     "prototype": "npm run db:start && npm run db:migrate && npm run db:seed && npm --prefix frontend run dev -- --open"
   },
   "devDependencies": {
-    "nodemailer": "^7.0.10",
+    "nodemailer": "^10.3.1",
     "supabase": "^2.122.0"
   }
 }

@@ -6,22 +6,26 @@ This guide is for teammates who are new to coding or GitHub. You can do the setu
 
 1. Ask the team lead to confirm that your GitHub account has access to the ClinicFlow repository.
 2. [Create your own Codespace on `main`](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main). Alternatively, open the repository on GitHub and select **Code → Codespaces → Create codespace on main**. If the team is already working on a different branch, ask which branch to use.
-3. Wait for setup to finish. The first setup installs the Supabase CLI and frontend packages.
+3. Wait for setup to finish. Codespaces installs Node.js and the project dependencies automatically.
 4. You are now in VS Code in your browser. The file list is on the left. Select **Terminal → New Terminal** to open the command area at the bottom.
+
+Codespaces runs in a Linux container, so the computer you use to access it does not change the setup. Windows Intel and Apple silicon Mac users follow the same steps.
 
 If the Codespace reports an error, copy the error text and ask the team for help. Do not paste passwords, tokens, or other secrets into chat or an issue.
 
 ## 2. Run and view the app
 
-In the terminal, run:
+In the terminal, run this one command:
 
 ```sh
-npm --prefix frontend run dev -- --host 0.0.0.0
+npm run dev
 ```
 
 This starts the local development server. Codespaces forwards port `5173`; select **Open in Browser** next to that port to see the app. Leave the command running while you work. When you want to stop the server, click its terminal and press `Ctrl+C`.
 
 When you edit and save frontend code, Vite normally refreshes the preview automatically. Login, profile editing, clinic search, booking changes, staff operations, accessibility preferences, and in-app notifications connect to the configured Supabase project. Use synthetic data only.
+
+If you are running the project directly on your own computer instead of Codespaces, install Node.js 22.12 or newer from [nodejs.org](https://nodejs.org/); npm is included with Node.js. From the repository root, run `npm run setup` once, then `npm run dev`. In Windows PowerShell, use `npm.cmd run setup` and `npm.cmd run dev` if PowerShell blocks the `npm` command. On macOS, use `npm run setup` and `npm run dev` in Terminal; npm selects packages for the computer's OS and processor.
 
 ## 3. Find your task
 

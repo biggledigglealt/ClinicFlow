@@ -1,7 +1,7 @@
 {
   "name": "ClinicFlow",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:1-24-bookworm",
-  "postCreateCommand": "npm ci && npm ci --prefix frontend",
+  "postCreateCommand": "npm run setup",
   "forwardPorts": [5173, 54321, 54323, 54324],
   "portsAttributes": {
     "5173": {
