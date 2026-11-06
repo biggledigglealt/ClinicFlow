@@ -1,6 +1,13 @@
 {
   "name": "ClinicFlow",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:1-24-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "installDockerBuildx": true
+    }
+  },
+  "runArgs": ["--init", "--privileged"],
   "postCreateCommand": "npm run setup",
   "forwardPorts": [5173, 54321, 54323, 54324],
   "portsAttributes": {
