@@ -9,7 +9,7 @@ This guide is for teammates who are new to coding or GitHub. You can do the setu
 3. Wait for setup to finish. Codespaces installs Node.js and the project dependencies automatically.
 4. You are now in VS Code in your browser. The file list is on the left. Select **Terminal → New Terminal** to open the command area at the bottom.
 
-Codespaces runs in a Linux container, so the computer you use to access it does not change the setup. Windows Intel and Apple silicon Mac users follow the same steps.
+Each Codespace has its own local database and accounts. Teammates do not share local records; use synthetic data only.
 
 If the Codespace reports an error, copy the error text and ask the team for help. Do not paste passwords, tokens, or other secrets into chat or an issue.
 
@@ -21,9 +21,9 @@ In the terminal, run this one command:
 npm run dev
 ```
 
-This starts the local development server. Codespaces forwards port `5173`; select **Open in Browser** next to that port to see the app. Leave the command running while you work. When you want to stop the server, click its terminal and press `Ctrl+C`.
+This starts local Supabase, applies migrations, loads synthetic clinic data, and starts the frontend. Codespaces opens forwarded port `5173` when it is ready. Leave the command running while you work. When you want to stop the app, click its terminal and press `Ctrl+C`.
 
-When you edit and save frontend code, Vite normally refreshes the preview automatically. Login, profile editing, clinic search, booking changes, staff operations, accessibility preferences, and in-app notifications connect to the configured Supabase project. Use synthetic data only.
+When you edit and save frontend code, Vite normally refreshes the preview automatically. Login, profile editing, clinic search, booking changes, staff operations, accessibility preferences, and in-app notifications connect to the Codespace's local Supabase database. Use synthetic data only.
 
 If you are running the project directly on your own computer instead of Codespaces, install Node.js 22.12 or newer from [nodejs.org](https://nodejs.org/); npm is included with Node.js. From the repository root, run `npm run setup` once, then `npm run dev`. In Windows PowerShell, use `npm.cmd run setup` and `npm.cmd run dev` if PowerShell blocks the `npm` command. On macOS, use `npm run setup` and `npm run dev` in Terminal; npm selects packages for the computer's OS and processor.
 
@@ -44,17 +44,15 @@ These ownership notes are a starting point, not a reason to work in isolation. A
 
 Supabase with PostgreSQL is the current development target. The repository includes a migration, RLS policies, local CLI configuration, frontend Auth helpers, and synthetic database tests. The team should review provider fit, cost, privacy, and access rules before applying the migration to a hosted project or using real information. Use synthetic records only.
 
-A terminal transcript in the in-progress deliverable reports a hosted link and migration push, but the current remote state has not been verified. Ask the project owner to confirm the linked project and migration history before any hosted database action. Never put a service-role or secret key in the frontend. The publishable key is public and belongs only in the ignored `frontend/.env.local` file.
+A terminal transcript in the in-progress deliverable reports a hosted link and migration push, but the current remote state has not been verified. Ask the project owner to confirm the linked project and migration history before any hosted database action. Never put a service-role or secret key in the frontend. The local `npm run dev` command obtains a publishable key automatically; no environment file or forwarded API URL is needed. `.env.example` is only for builds configured to use a hosted project.
 
-For local database features, each teammate runs a separate Supabase database on their own computer; local records are not shared. Install and start Docker Desktop, install Node.js 22.12 or newer, then install dependencies from the repository root with `npm.cmd run setup` in Windows PowerShell or `npm run setup` in macOS Terminal.
+For local development outside Codespaces, install Docker Desktop and Node.js 22.12 or newer, then install dependencies from the repository root with `npm.cmd run setup` in Windows PowerShell or `npm run setup` in macOS Terminal. Start the entire database-backed app with `npm run dev`.
 
-Start Supabase once to print its local API URL and publishable key: run `npm.cmd run db:start` in Windows PowerShell or `npm run db:start` in macOS Terminal. Copy `frontend/.env.example` to `frontend/.env.local`, set `VITE_SUPABASE_URL` to `http://127.0.0.1:54321`, and set `VITE_SUPABASE_PUBLISHABLE_KEY` to the publishable key from the CLI output. Never put a secret or service-role key in the frontend. The ignored `.env.local` file stays on that computer.
-
-Then launch the database-backed app with `npm.cmd run prototype` on Windows or `npm run prototype` on macOS. This starts Supabase, applies migrations and synthetic seed data, and opens the app without resetting local accounts. Supabase Studio is at `http://127.0.0.1:54323`; Mailpit is at `http://127.0.0.1:54324`. Stop Supabase with `npm.cmd run db:stop` on Windows or `npm run db:stop` on macOS. In Codespaces, use the forwarded URL for port `54321` and the forwarded frontend URL for auth redirects. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
+Local signup is immediate without email confirmation. Password recovery emails are captured by Mailpit at `http://127.0.0.1:54324` locally or the forwarded `54324` port in Codespaces. Supabase Studio is at `http://127.0.0.1:54323` locally. Stop Supabase with `npm.cmd run db:stop` on Windows or `npm run db:stop` on macOS/Linux. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
 
 Use `db:migrate` to apply pending migrations without resetting local accounts. `db:reset` removes locally created Auth users and database records before applying migrations and synthetic clinic, provider, and schedule records from `supabase/seed.sql`; run it only when you intentionally want a clean local database. Use `db:test` to rerun database checks without resetting local accounts.
 
-Test local verification through the frontend signup form. Adding a user from Studio's Users page is administrative provisioning and may bypass the signup verification flow. Local email confirmations are captured in Mailpit at `http://127.0.0.1:54324`; they are not sent to real inboxes. Appointment email jobs can be processed locally with `npm.cmd run notify:local`; the worker targets Mailpit only and is not scheduled automatically. The signup screen includes a resend action. Hosted Supabase needs the correct web redirect URLs, email-confirmation settings, and a selected SMTP provider before external delivery. For native Capacitor verification or password recovery, add `ca.uottawa.clinicflow://auth-callback` to the hosted Auth redirect allowlist. Native builds and email callback handoff have not been verified.
+Appointment email jobs can be processed locally with `npm.cmd run notify:local`; the worker targets Mailpit only and is not scheduled automatically. Hosted Supabase needs the correct web redirect URLs, email-confirmation settings, and a selected SMTP provider before external delivery. For native Capacitor verification or password recovery, add `ca.uottawa.clinicflow://auth-callback` to the hosted Auth redirect allowlist. Native builds and email callback handoff have not been verified.
 
 ## 5. Keep logs useful and private
 
