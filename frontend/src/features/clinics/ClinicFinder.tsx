@@ -40,6 +40,36 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   const [onlyWithAvailability, setOnlyWithAvailability] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+   const [sortBy, setSortBy] = useState('distance')
+
+  const sortedClinics = [...clinics].sort((a, b) => {
+    if (sortBy === 'name') {
+      return a.name.localeCompare(b.name)
+    }
+
+    if (sortBy === 'availability') {
+      if (!a.next_available_at && !b.next_available_at) return 0
+      if (!a.next_available_at) return 1
+      if (!b.next_available_at) return -1
+
+      return new Date(a.next_available_at).getTime()
+        - new Date(b.next_available_at).getTime()
+    }
+
+    return a.distance_km - b.distance_km
+  })
+
+  function resetFilters() {
+    setLocation(defaultSearch.location)
+    setMaxDistanceKm(defaultSearch.maxDistanceKm)
+    setSelectedServices([])
+    setAcceptingNewPatients(false)
+    setOnlyWithAvailability(false)
+    setSortBy('distance')
+
+    void loadClinics(defaultSearch)
+  }
+
 
   useEffect(() => {
     let isCurrent = true
@@ -175,14 +205,40 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
         <button type="submit" disabled={isLoading}>
           {isLoading ? t('Searching…') : t('Search clinics')}
         </button>
+        <button
+          type="button"
+          onClick={resetFilters}
+          disabled={isLoading}
+        >
+          {t('Reset filters')}
+        </button>
       </form>
+      {!isLoading && !error && (
+        <div className="clinic-results-controls">
+          <p aria-live="polite">
+            <strong>{clinics.length} {t('clinics found')}</strong>
+          </p>
 
+          <label htmlFor="clinic-sort">
+            {t('Sort by')}
+            <select
+              id="clinic-sort"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value)}
+            >
+              <option value="distance">{t('Nearest first')}</option>
+              <option value="availability">{t('Earliest appointment')}</option>
+              <option value="name">{t('Clinic name (A-Z)')}</option>
+            </select>
+          </label>
+        </div>
+      )}
       {error && <p className="auth-error" role="alert">{t(error)}</p>}
       {isLoading ? (
         <p role="status">Finding nearby clinics…</p>
       ) : clinics.length > 0 ? (
         <div className="clinic-list" aria-live="polite">
-          {clinics.map((clinic) => {
+          {sortedClinics.map((clinic) => {
             const isSelected = clinic.id === selectedClinicId
             const locationLabel = [clinic.city, clinic.province].filter(Boolean).join(', ')
 
