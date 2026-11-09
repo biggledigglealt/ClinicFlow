@@ -482,6 +482,26 @@ select ok(
 
 update public.clinics set appointment_duration_minutes = 60
  where id = '40000000-0000-4000-8000-000000000001';
+
+-- Earlier interval tests clear Monday's hours. Restore the search fixture's
+-- weekday because the fixture date is today + 7, which is also Monday when
+-- this suite runs on a Monday.
+delete from public.clinic_hours
+ where clinic_id = '40000000-0000-4000-8000-000000000001'
+   and day_of_week = extract(dow from (now() at time zone 'America/Toronto')::date + 7)::smallint;
+insert into public.clinic_hours (clinic_id, day_of_week, opens_at, closes_at)
+select '40000000-0000-4000-8000-000000000001',
+       extract(dow from test_date)::smallint, '09:00', '17:00'
+  from (select (now() at time zone 'America/Toronto')::date + 7 as test_date) fixture;
+
+delete from public.staff_hours
+ where membership_id = '50000000-0000-4000-8000-000000000001'
+   and day_of_week = extract(dow from (now() at time zone 'America/Toronto')::date + 7)::smallint;
+insert into public.staff_hours (membership_id, day_of_week, opens_at, closes_at)
+select '50000000-0000-4000-8000-000000000001',
+       extract(dow from test_date)::smallint, '09:00', '17:00'
+  from (select (now() at time zone 'America/Toronto')::date + 7 as test_date) fixture;
+
 insert into public.schedule_blocks (clinic_id, starts_at, ends_at, reason)
 values (
     '40000000-0000-4000-8000-000000000001',
