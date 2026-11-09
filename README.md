@@ -1,145 +1,158 @@
 # ClinicFlow
 
-ClinicFlow is a team project for clinic scheduling and clinic operations. It is an administrative prototype, not a medical-records system or a tool for making clinical decisions.
+ClinicFlow is a course prototype for clinic search, appointment scheduling, and clinic operations. It is an administrative tool, not an electronic medical record system or a clinical decision-support tool. Development and testing must use synthetic data only.
 
-## New to GitHub or coding? Start here
+## Current development and deployment status
 
-You do not need to install coding tools on your own computer. Use GitHub Codespaces to open the project in a browser-based VS Code environment. Follow the [first-day team onboarding guide](docs/TEAM_ONBOARDING.md) for help finding your assigned work and sharing changes with teammates.
+The current integration branch is `feature/supabase-foundation`. It contains the Supabase-backed application and is ahead of `main`. Team feature work should branch from this integration branch, go through pull requests back into it, and be merged to `main` after integration checks pass.
 
-### Start the app in Codespaces
+A Vercel site is available at [clinic-flow-sigma-snowy.vercel.app](https://clinic-flow-sigma-snowy.vercel.app/), but its deployed frontend does not currently appear to match the Supabase-connected code in this branch. Treat that URL as unverified and do not use it for client testing until a preview or production deployment is checked with working sign-in, clinic search, and booking.
 
-1. [Create your own Codespace on `main`](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main). If your team lead has asked you to use a different branch, choose that branch instead.
-2. Alternatively, open this repository on GitHub, select the green **Code** button, then the **Codespaces** tab and select **Create codespace on main**.
-3. Wait for setup to finish. Codespaces installs Node.js and the project dependencies automatically. The first app start also downloads and starts the local Supabase containers.
-4. In VS Code, open **Terminal → New Terminal**. A terminal is where you type commands for the project.
-5. Copy and run:
+The validated database environment is local Supabase. Hosted Supabase configuration and migration history have not been verified. Review the hosted project with its owner before deploying migrations or configuring production access.
+
+## What the prototype supports
+
+The React, TypeScript, and Vite application uses Supabase Auth and PostgreSQL. The local prototype supports:
+
+- Patient registration and sign-in, account recovery, and a minimal booking profile.
+- Clinic search using manually entered Ottawa locations and synthetic clinic records.
+- Service, distance, new-patient, and appointment-availability filters, with sortable results.
+- Appointment availability, booking, cancellation, rescheduling, and upcoming appointment views.
+- Clinic staff scheduling and appointment operations for trusted clinic members.
+- Waitlist offers, in-app notifications, accessibility preferences, and selected audit logging.
+
+Clinic data is synthetic and limited to Ottawa examples, including postal-prefix lookup points K1N and K2G. It is not a verified or comprehensive clinic directory. The prototype does not contain clinical notes, diagnoses, prescriptions, or treatment plans.
+
+Capacitor Android and iOS project shells are present, but native builds, authentication handoff, and physical-device testing have not been verified. Appointment email jobs can be tested locally with Mailpit; hosted email delivery, scheduled background sending, SMS, and push notifications are not configured.
+
+## Start the application in GitHub Codespaces
+
+1. Open the repository in GitHub Codespaces and select the `feature/supabase-foundation` branch.
+2. Wait for Codespaces setup to finish.
+3. Open **Terminal → New Terminal** and run:
 
    ```sh
    npm run dev
    ```
 
-6. Codespaces opens the forwarded port `5173` when the app is ready. Keep the terminal running while you use the app. To stop the app, click the terminal and press `Ctrl+C`.
+4. Open forwarded port `5173` when Codespaces offers it. Keep the terminal running while using the app.
 
-No `.env.local` file or forwarded Supabase URL needs to be configured. The frontend connects to Supabase through the same forwarded port as the app. Each teammate should create their own Codespace; its local accounts and data are separate from everyone else's. Use fake email addresses and synthetic data.
+Each Codespace has its own local Supabase database, accounts, and synthetic records. Teammates do not share local database state. Use fake email addresses and synthetic information.
 
-### Run from your own computer instead
+## Run locally
 
-For a local setup, install Docker Desktop and Node.js 22.12 or newer from [nodejs.org](https://nodejs.org/); npm is included with Node.js. From the repository root, install dependencies once with `npm run setup`, then start everything with `npm run dev`. In Windows PowerShell, use `npm.cmd run setup` and `npm.cmd run dev` if PowerShell blocks the `npm` command. On macOS, use `npm run setup` and `npm run dev` in Terminal.
+Install Node.js 22.12 or newer and Docker Desktop. From the repository root, install dependencies once:
 
-## Who is working on what?
+```sh
+npm run setup
+```
 
-These are the current workstream owners from the team plan. Owners should keep their changes on their own branch and coordinate with one another before changing shared interfaces or files.
-
-| Workstream | Owner(s) | Starting scope |
-| --- | --- | --- |
-| Database and security | Cameron | Review the Supabase schema, access rules, and privacy-safe logging with the team before hosted deployment. |
-| Device-adaptive UI | Shyaan and Alex | Make the interface usable on phones, tablets, and desktop screens. |
-| Clinic finder | Juliana | Build the clinic search and clinic selection experience. |
-| Calendar and scheduling | Christopher | Build the calendar and appointment time-selection experience. |
-
-Everyone should review how their feature fits with the others. For example, the clinic finder and calendar both need to agree on how a selected clinic and available appointment times are represented. Ask the team before changing another person's workstream.
-
-### Database direction
-
-Supabase with PostgreSQL is the current development target. The repository includes a versioned schema, Row Level Security policies, local Supabase CLI configuration, and frontend client/Auth helpers. Review provider fit, cost, privacy, and access rules with the team before applying migrations to a hosted project. Do not use real patient data.
-
-Use Supabase Auth for identity and sessions. Do not create application passwords or custom login tokens. Use synthetic data only.
-
-### Local database setup
-
-Each teammate gets a separate local database in their Codespace or on their own computer; local records and accounts are not shared between teammates. Docker is required for the local database. Codespaces installs the project dependencies during setup. On your own computer, install Node.js 22.12 or newer and Docker Desktop, then run `npm.cmd run setup` in Windows PowerShell or `npm run setup` in macOS Terminal once.
-
-Start the database-backed app from the repository root:
+Start the app and its local Supabase services:
 
 ```sh
 npm run dev
 ```
 
-This single command starts Supabase, applies pending migrations, loads synthetic clinic data, reads the local publishable key, and starts Vite on port `5173`. It does not reset local accounts or records. No `.env.local` file or URL editing is needed. The frontend proxies API requests through its own origin, so the browser uses the correct host both locally and in Codespaces. API and storage secret keys are never added to frontend configuration.
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173). In Windows PowerShell, use `npm.cmd` if PowerShell blocks the `npm` command.
 
-In Codespaces, open the forwarded port `5173`. On your own computer, open `http://127.0.0.1:5173`. Local signup creates a usable account immediately without email confirmation. Password recovery emails are captured in Mailpit; open the forwarded `54324` port in Codespaces or `http://127.0.0.1:54324` locally.
+The startup script starts Supabase, applies pending migrations, loads synthetic clinic data, and starts Vite. It does not reset local accounts or database records. The frontend routes local API requests through Vite's development proxy.
 
-Press **Ctrl+C** in the terminal to stop the app. To stop Supabase too, run `npm.cmd run db:stop` on Windows or `npm run db:stop` on macOS/Linux. The next `npm run dev` starts the saved local database again. Supabase Studio is available on port `54323`.
+Local signup is configured for development and does not require email confirmation. Password recovery email is captured in Mailpit:
 
-Use `npm run db:migrate` to apply schema changes without resetting local accounts. `npm run db:reset` deletes local Auth users and database records before loading synthetic records; use it only when you intend to clear local data. Local Auth settings are for development with synthetic data. Before using a hosted project, configure email confirmation, allowed Auth redirects, and an SMTP provider.
+- Local: [http://127.0.0.1:54324](http://127.0.0.1:54324)
+- Codespaces: open forwarded port `54324`
 
-Appointment events also create private local email outbox jobs for confirmations, cancellations, reschedules, and eligible 24-hour reminders. To process jobs that are due, run `npm.cmd run notify:local` in Windows PowerShell, then inspect Mailpit at `http://127.0.0.1:54324`. The worker is deliberately local-only. There is no hosted email provider or scheduled background worker, so do not treat this as automatic production delivery.
+Supabase Studio is available locally at [http://127.0.0.1:54323](http://127.0.0.1:54323).
 
-The checked-in migrations are in `supabase/migrations/`. A terminal transcript in the in-progress deliverable reports that a hosted project was linked and these migrations were pushed, but the current remote migration history and Auth settings have not been verified in this review. Confirm the live state with the project owner before linking or pushing anything. Review Auth redirect URLs and email-confirmation settings before using hosted data.
-### Logging and privacy goals
+### Supabase commands
 
-The team wants accurate, useful logs for important administrative actions. As a starting point, record the time, action, non-sensitive actor identifier, affected record identifier, and whether the action succeeded. Keep logs focused: **never log passwords, access tokens, patient names, dates of birth, contact details, or full request contents.** Use fake data while developing and testing.
+Run these from the repository root:
 
-## How we work together
+```sh
+npm run db:start
+npm run db:migrate
+npm run db:test
+npm run db:stop
+```
 
-GitHub keeps the shared project and its change history. A **branch** is your own workspace for one change. A **commit** is a saved snapshot of your changes. A **pull request** (PR) asks the team to review your branch and add it to the shared `main` branch.
+Use `npm run db:reset` only when you intend to delete local Auth users and database records and reload the synthetic seed data. Do not reset a database containing work you need to keep.
 
-1. **Start from the latest `main`.** Before beginning a new task, make sure your previous changes are committed. In the terminal, run:
+To process due email jobs locally, run:
 
-   ```sh
-   git switch main
-   git pull
-   ```
+```sh
+npm run notify:local
+```
 
-2. **Create a branch for your task.** Use a short name that says what you are changing:
+The worker sends test messages to local Mailpit only. It is not a hosted email service or an automatic production reminder worker.
 
-   ```sh
-   git switch -c feature/clinic-search
-   ```
+## Hosted deployment requirements
 
-   Replace `clinic-search` with a few words describing your task. Do not make feature changes directly on `main`.
+The production Vite build requires these environment variables:
 
-3. **Make and check your change.** Save your files. The running app normally refreshes when you edit frontend code.
-4. **Save a commit and publish your branch:**
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-   ```sh
-   git add path/to/your-changed-file
-   git commit -m "Add clinic search layout"
-   git push -u origin HEAD
-   ```
+Set them in the hosting provider's environment settings and rebuild the frontend. Never use a Supabase service-role or secret key in frontend variables. A deployed frontend also requires a reachable Supabase project with the required migrations, policies, Auth settings, and redirect URLs. Review those settings with the project owner before deployment. Local Supabase is not reachable from Vercel.
 
-   Replace `path/to/your-changed-file` with the path to the file you changed; list each changed file if there is more than one. Replace the example commit message with a short description of your change. In VS Code, you can also use the **Source Control** icon to review, stage, commit, and publish changes.
+For a Vercel preview, use the repository's `frontend/` directory, build with `npm run build`, and publish `dist/`. A preview is not ready for client testing until sign-in, clinic search, and appointment operations have been verified against its configured backend.
 
-5. **Open a pull request.** On GitHub, select **Compare & pull request** for your branch. Set the target/base branch to `main`, explain what you changed, and say what you tested. Ask a teammate to review it. Make requested changes on the same branch. After approval, follow the team's process to merge it.
-6. **Start your next task with a fresh branch** from the latest `main`.
+## Validation
 
-If Git reports a conflict or you are unsure what a command will do, stop and ask a teammate rather than force-pushing or deleting work.
-
-## Run the project checks
-
-Run these commands from the repository root before asking for review:
+Run the repository checks from the project root:
 
 ```sh
 node --test backend/*.test.mjs
 npm --prefix frontend run lint
 npm --prefix frontend run build
+npm run db:test
 ```
 
-- The test command runs the existing backend prototype tests. Frontend lint and build commands check the React application.
-- PostgreSQL tests run against local Supabase with Docker. `db:migrate` applies pending local migrations without resetting local users or records. Use `db:reset` only when you intentionally want to erase local Auth users and database data.
+The backend tests cover legacy helper modules. The PostgreSQL tests use pgTAP against local Supabase and synthetic fixtures. A passing build or database test does not verify hosted deployment, native mobile builds, physical-device behaviour, or live concurrent traffic.
 
-## What is implemented today?
+## Team work and branches
 
-The React/TypeScript/Vite prototype uses Supabase Auth and PostgreSQL. It supports account recovery and password changes, editable minimal patient profiles, clinic search against synthetic Ottawa data, configurable availability, patient booking/cancellation/rescheduling, and upcoming appointments. Clinic staff with trusted active memberships can manage split recurring hours and unavailable periods, view their daily schedule, set appointment duration, check patients in, cancel bookings, and mark completed/no-show outcomes. A platform administrator can provision an existing verified account for clinic staff access; public signup cannot grant staff roles. Waitlist offers are created when a matching appointment is cancelled and can be accepted through the validated booking function. Accessibility settings apply text size, contrast, English/French interface labels, and speech preferences; clinic and staff-entered content stays in its original language. In-app notifications are generated for booking changes and poll while the page is open. Appointment email events are queued and can be delivered to local Mailpit by manually running the local worker. A production email provider, scheduled background worker, SMS, and push delivery are not configured.
+The current integration branch is `feature/supabase-foundation`; `main` is the stable branch. Each contributor should use a separate feature branch based on the integration branch, rather than committing directly to the shared branch.
 
-Capacitor Android and iOS project files are configured with an app callback for verification and password recovery. Native builds and device testing have not been completed. Clinic directory records remain synthetic and limited to Ottawa, K1N, and K2G; no verified listings have been imported. A CSV workflow validates HTTPS source details and a 25 km pilot radius around uOttawa, and writes verified records only to local Supabase. The old `backend/auth.mjs` token helpers are prototype code and are not the application's authentication system.
+```sh
+git fetch origin
+git switch feature/supabase-foundation
+git pull
+git switch -c feature/short-task-name
+```
+
+After making and checking a change:
+
+```sh
+git status
+git add path/to/changed-file
+git commit -m "Describe the change"
+git push -u origin HEAD
+```
+
+Open a pull request with `feature/supabase-foundation` as the base branch. Review and test each change before merging it into the integration branch. Once the integrated prototype is ready, open a pull request from `feature/supabase-foundation` to `main`.
+
+| Workstream | Owner(s) |
+| --- | --- |
+| Database and security | Cameron |
+| Device-adaptive UI | Shyaan and Alex |
+| Clinic Finder | Juliana |
+| Calendar and scheduling | Christopher |
+
+Coordinate shared interfaces and database changes with the team. Database schema changes belong in `supabase/migrations/`; test them against local Supabase using synthetic data.
 
 ## Privacy and project scope
 
-- Use synthetic/sample data only. Never put real patient or staff information in code, screenshots, issues, pull requests, or test data.
-- Do not commit passwords, API keys, tokens, or `.env` files. Ask the team how approved secrets should be shared.
-- Keep ClinicFlow focused on appointment booking, clinic information, reminders, and operational workflows.
+- Use synthetic data only. Do not put real patient or staff information in code, screenshots, issues, pull requests, or test data.
+- Do not commit passwords, tokens, service-role keys, or `.env` files.
+- Keep ClinicFlow focused on clinic search, appointment booking, scheduling, reminders, and operational workflows.
 - Do not add medical records, diagnoses, prescriptions, treatment plans, or clinical decision support.
+- Keep audit logs limited to operational identifiers and actions; never log passwords, access tokens, patient names, dates of birth, contact details, or full request contents.
 
-## Project folders
+## Repository layout
 
-- `frontend/` — React, TypeScript, and Vite application.
-- `backend/` — legacy prototype modules and tests; PostgreSQL migrations are under `supabase/`.
-- `supabase/` — local CLI configuration, database migrations, and database tests.
-- `tests/` — test planning and validation notes.
-- `docs/` — team onboarding and subsystem notes.
-- [Deliverable D alignment audit](docs/DELIVERABLE_D_ALIGNMENT.md) — current implementation status, spec conflicts, and remaining report work.
-- [Deliverable D detailed design draft](docs/DELIVERABLE_D_DETAILED_DESIGN.txt) — copy-ready subsystem descriptions and drawing guidance.
-- `Deliverables/` — project brief and course deliverables.
-
-The `.devcontainer/` folder configures Codespaces. The `.github/` folder contains the pull request template and automated checks.
+- `frontend/` — React, TypeScript, and Vite application, plus Capacitor shells.
+- `supabase/` — local Supabase configuration, migrations, seed data, and database tests.
+- `scripts/` — local startup, migration, seed, and notification-worker commands.
+- `backend/` — legacy prototype helper modules and tests.
+- `docs/` — onboarding, subsystem, privacy, and implementation-status notes.
+- `Deliverables/` — course deliverables and project brief.
