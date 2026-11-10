@@ -6,22 +6,26 @@ This guide is for teammates who are new to coding or GitHub. You can do the setu
 
 1. Ask the team lead to confirm that your GitHub account has access to the ClinicFlow repository.
 2. [Create your own Codespace on `main`](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main). Alternatively, open the repository on GitHub and select **Code → Codespaces → Create codespace on main**. If the team is already working on a different branch, ask which branch to use.
-3. Wait for setup to finish. The first setup may take a few minutes while the frontend packages install.
+3. Wait for setup to finish. Codespaces installs Node.js and the project dependencies automatically.
 4. You are now in VS Code in your browser. The file list is on the left. Select **Terminal → New Terminal** to open the command area at the bottom.
+
+Each Codespace has its own local database and accounts. Teammates do not share local records; use synthetic data only.
 
 If the Codespace reports an error, copy the error text and ask the team for help. Do not paste passwords, tokens, or other secrets into chat or an issue.
 
 ## 2. Run and view the app
 
-In the terminal, run:
+In the terminal, run this one command:
 
 ```sh
-npm --prefix frontend run dev -- --host 0.0.0.0
+npm run dev
 ```
 
-This starts the local development server. Codespaces forwards port `5173`; select **Open in Browser** next to that port to see the app. Leave the command running while you work. When you want to stop the server, click its terminal and press `Ctrl+C`.
+This starts local Supabase, applies migrations, loads synthetic clinic data, and starts the frontend. Codespaces opens forwarded port `5173` when it is ready. Leave the command running while you work. When you want to stop the app, click its terminal and press `Ctrl+C`.
 
-When you edit and save frontend code, Vite normally refreshes the preview automatically. The current app is a prototype: its sample content is not connected to a working database or booking API.
+When you edit and save frontend code, Vite normally refreshes the preview automatically. Login, profile editing, clinic search, booking changes, staff operations, accessibility preferences, and in-app notifications connect to the Codespace's local Supabase database. Use synthetic data only.
+
+If you are running the project directly on your own computer instead of Codespaces, install Node.js 22.12 or newer from [nodejs.org](https://nodejs.org/); npm is included with Node.js. From the repository root, run `npm run setup` once, then `npm run dev`. In Windows PowerShell, use `npm.cmd run setup` and `npm.cmd run dev` if PowerShell blocks the `npm` command. On macOS, use `npm run setup` and `npm run dev` in Terminal; npm selects packages for the computer's OS and processor.
 
 ## 3. Find your task
 
@@ -29,27 +33,26 @@ Check with your team before starting if task ownership or the latest assignment 
 
 | Workstream | Owner(s) | First goal |
 | --- | --- | --- |
-| Database and security | Cameron | Compare Supabase Postgres and Firebase Cloud Firestore for the scheduling data; propose an agreed schema, access approach, and privacy-safe audit logging. |
-| Device-adaptive UI | Shyaan and Alex | Make existing and new screens work on phone, tablet, and desktop sizes. |
-| Clinic finder | Juliana | Implement the clinic search and selection flow. |
-| Calendar and scheduling | Christopher | Implement calendar navigation and appointment time selection. |
+| Database and security | Cameron | Maintain migrations, RLS, booking validation, waitlists, and audit coverage. |
+| Device-adaptive UI | Shyaan and Alex | Test responsive and Capacitor layouts across screen sizes and devices. |
+| Clinic finder | Juliana | Expand and validate clinic search data and the selection flow. |
+| Calendar and scheduling | Christopher | Test patient booking changes and staff schedule/appointment operations. |
 
 These ownership notes are a starting point, not a reason to work in isolation. Agree on shared data shapes and interfaces before separate features depend on them. Ask before editing another owner's files or changing a shared design.
 
-## 4. Understand the database question
+## 4. Database and Supabase development setup
 
-The database provider is **not selected or connected yet**. Do not create a paid account, upload real information, or treat either provider as approved until the team agrees.
+Supabase with PostgreSQL is the current development target. The repository includes a migration, RLS policies, local CLI configuration, frontend Auth helpers, and synthetic database tests. The team should review provider fit, cost, privacy, and access rules before applying the migration to a hosted project or using real information. Use synthetic records only.
 
-Appointments link to clinics, staff members, and patients. Supabase uses PostgreSQL, a relational database with tables and foreign keys that can express these relationships. Firebase Cloud Firestore stores documents; it can be a good fit for flexible, real-time data, but related scheduling data needs a deliberate plan for duplication and consistency. These are trade-offs to discuss, not a claim that one provider is always faster or better.
+A terminal transcript in the in-progress deliverable reports a hosted link and migration push, but the current remote state has not been verified. Ask the project owner to confirm the linked project and migration history before any hosted database action. Never put a service-role or secret key in the frontend. The local `npm run dev` command obtains a publishable key automatically; no environment file or forwarded API URL is needed. `.env.example` is only for builds configured to use a hosted project.
 
-Bring the team a short recommendation that compares:
+For local development outside Codespaces, install Docker Desktop and Node.js 22.12 or newer, then install dependencies from the repository root with `npm.cmd run setup` in Windows PowerShell or `npm run setup` in macOS Terminal. Start the entire database-backed app with `npm run dev`.
 
-- How the appointment-to-clinic/staff/patient relationships will be represented.
-- How authentication and database access will be restricted.
-- What the team can build and maintain with its current experience.
-- Privacy implications and the provider's current pricing/free-tier limits.
+Local signup is immediate without email confirmation. Password recovery emails are captured by Mailpit at `http://127.0.0.1:54324` locally or the forwarded `54324` port in Codespaces. Supabase Studio is at `http://127.0.0.1:54323` locally. Stop Supabase with `npm.cmd run db:stop` on Windows or `npm run db:stop` on macOS/Linux. The schema source is `supabase/migrations/`; do not duplicate schema changes in frontend code.
 
-Do not implement your own password storage. If a provider is selected, use its supported authentication and access-control features and keep credentials out of the repository.
+Use `db:migrate` to apply pending migrations without resetting local accounts. `db:reset` removes locally created Auth users and database records before applying migrations and synthetic clinic, provider, and schedule records from `supabase/seed.sql`; run it only when you intentionally want a clean local database. Use `db:test` to rerun database checks without resetting local accounts.
+
+Appointment email jobs can be processed locally with `npm.cmd run notify:local`; the worker targets Mailpit only and is not scheduled automatically. Hosted Supabase needs the correct web redirect URLs, email-confirmation settings, and a selected SMTP provider before external delivery. For native Capacitor verification or password recovery, add `ca.uottawa.clinicflow://auth-callback` to the hosted Auth redirect allowlist. Native builds and email callback handoff have not been verified.
 
 ## 5. Keep logs useful and private
 
@@ -107,4 +110,4 @@ All three should finish successfully before review. If one fails, read the error
 
 ## Current project status
 
-The frontend is a runnable React/TypeScript/Vite prototype. `backend/` currently contains prototype schema and authentication helper modules and tests. The repository does not yet have a connected hosted database or application API. Some displayed content is static sample content; it should not be represented as a completed live workflow.
+The frontend supports account recovery/password changes, editable patient profiles, clinic search, booking/cancellation/rescheduling, staff schedule tools, waitlist offers, accessibility controls, English/French interface labels, and in-app notifications. Appointment email events enter a private outbox and can be sent to local Mailpit by running the local worker. A production provider, scheduled reminder worker, SMS, and push are not configured. Local clinic/provider data is synthetic and limited to Ottawa, K1N, and K2G; the verified-listing importer is local-only and no real listings have been imported. Native builds, callback handoff, and real-device accessibility testing remain unverified. `backend/` contains legacy prototype modules and tests. Do not push local migration changes to a hosted project without confirming its state and redirect settings with the project owner.

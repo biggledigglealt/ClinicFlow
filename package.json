@@ -1,0 +1,21 @@
+{
+  "name": "clinicflow",
+  "private": true,
+  "scripts": {
+    "setup": "npm ci && npm ci --prefix frontend",
+    "dev": "node scripts/start-local.mjs",
+    "db:start": "node scripts/supabase-local.mjs start",
+    "db:stop": "node scripts/supabase-local.mjs stop",
+    "db:migrate": "node scripts/supabase-local.mjs migrate",
+    "db:reset": "node scripts/supabase-local.mjs reset",
+    "db:test": "node scripts/supabase-local.mjs test",
+    "db:seed": "node scripts/seed-local.mjs",
+    "clinic:import": "node scripts/import-verified-clinics.mjs",
+    "notify:local": "node scripts/send-local-notifications.mjs",
+    "prototype": "npm run dev"
+  },
+  "devDependencies": {
+    "nodemailer": "^10.3.1",
+    "supabase": "^2.122.0"
+  }
+}

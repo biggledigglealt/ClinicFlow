@@ -1,29 +1,34 @@
+// Reference summary for the canonical Supabase schema in supabase/migrations/.
+// Keep this aligned with the SQL migration; PostgreSQL remains the source of truth.
 export const clinicflowSchema = {
-  patients: {
-    description: 'Stores unique patient identifiers and minimal booking profile details.',
-    fields: ['patientId', 'firstName', 'lastName', 'dob', 'contact', 'registrationDate'],
-    privacy: 'Collect only minimum necessary data for scheduling and administration.',
-  },
-  staff: {
-    description: 'Tracks clinic personnel details and scheduling constraints.',
-    fields: ['staffId', 'firstName', 'lastName', 'role', 'availability'],
-    privacy: 'Restrict access by role and clinic assignment.',
-  },
-  clinics: {
-    description: 'Maintains facility metadata required for patient booking and clinic lookup.',
-    fields: ['clinicId', 'name', 'address', 'contact'],
-    privacy: 'Expose only necessary public-facing contact and location information.',
-  },
-  appointments: {
-    description: 'Links patient, staff, and clinics to manage booking status and availability.',
-    fields: ['appointmentId', 'patientId', 'staffId', 'clinicId', 'date', 'time', 'status'],
-    privacy: 'Protect appointment data with authenticated access and audit logging.',
-  },
-  auditLogs: {
-    description: 'Records important system activity for traceability and compliance.',
-    fields: ['logId', 'actionType', 'actorId', 'timestamp', 'details'],
-    privacy: 'Keep logs focused on scheduling and access events.',
-  },
+  profiles: ['id', 'email', 'global_role', 'preferred_language', 'created_at', 'updated_at'],
+  clinics: [
+    'id', 'name', 'address', 'city', 'province', 'postal_code', 'phone', 'email',
+    'description', 'time_zone', 'is_active', 'created_at',
+  ],
+  patient_profiles: ['id', 'user_id', 'first_name', 'last_name', 'phone', 'created_at', 'updated_at'],
+  staff_profiles: ['id', 'user_id', 'first_name', 'last_name', 'job_title', 'created_at'],
+  clinic_memberships: ['id', 'clinic_id', 'staff_id', 'role', 'is_active', 'created_at'],
+  clinic_hours: ['id', 'clinic_id', 'day_of_week', 'opens_at', 'closes_at'],
+  staff_hours: ['id', 'membership_id', 'day_of_week', 'opens_at', 'closes_at'],
+  appointments: [
+    'id', 'patient_id', 'staff_id', 'clinic_id', 'start_at', 'end_at', 'status',
+    'checked_in_at', 'created_at', 'updated_at',
+  ],
+  waitlist_entries: [
+    'id', 'patient_id', 'clinic_id', 'preferred_from', 'preferred_until', 'status', 'created_at',
+  ],
+  notifications: [
+    'id', 'recipient_id', 'appointment_id', 'title', 'message', 'notification_type',
+    'read_at', 'scheduled_at', 'sent_at', 'created_at',
+  ],
+  announcements: [
+    'id', 'clinic_id', 'created_by', 'title', 'message', 'published_at', 'expires_at', 'created_at',
+  ],
+  accessibility_preferences: [
+    'user_id', 'language', 'text_size', 'high_contrast', 'text_to_speech', 'updated_at',
+  ],
+  audit_logs: ['id', 'actor_id', 'action_type', 'entity_type', 'entity_id', 'outcome', 'created_at'],
 }
 
 export function getSchemaSummary() {

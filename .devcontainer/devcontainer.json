@@ -1,12 +1,28 @@
 {
   "name": "ClinicFlow",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-24-bookworm",
-  "postCreateCommand": "npm ci --prefix frontend",
-  "forwardPorts": [5173],
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "installDockerBuildx": true
+    }
+  },
+  "runArgs": ["--init", "--privileged"],
+  "postCreateCommand": "npm run setup",
+  "forwardPorts": [5173, 54321, 54323, 54324],
   "portsAttributes": {
     "5173": {
       "label": "ClinicFlow frontend",
       "onAutoForward": "openBrowser"
+    },
+    "54321": {
+      "label": "Supabase API"
+    },
+    "54323": {
+      "label": "Supabase Studio"
+    },
+    "54324": {
+      "label": "Supabase email testing"
     }
   },
   "customizations": {

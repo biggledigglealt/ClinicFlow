@@ -1,23 +1,30 @@
-# Deliverable D subsystem overview
+# ClinicFlow subsystem overview
 
-This project is organized around the five ClinicFlow subsystems described in the project deliverables:
+ClinicFlow is an administrative clinic-finding and appointment prototype. It is not an electronic medical record and does not provide diagnosis, treatment, prescriptions, or clinical decision support. All clinic, provider, patient, and schedule records used for development and tests must be synthetic.
 
-1. Patient Appointment Management
-2. Clinic Finder
-3. Database and Data Management
-4. Accessibility Settings
-5. Notification System
+The browser application uses React, TypeScript, and Vite. Capacitor Android and iOS projects are present so the same frontend can be packaged in native shells. Native compilation, callback handoff, and device testing have not been completed.
 
-## Scope
-The prototype remains focused on administrative clinic operations, not EMR or clinical care workflows.
+## Subsystem status
 
-## Architecture notes
-- The frontend handles the patient-facing experience.
-- The backend and database layer store appointment, clinic, and audit data.
-- Notification events are triggered by appointment changes and clinic updates.
-- Accessibility preferences are stored per patient and applied consistently.
+| Subsystem | Implemented in the prototype | Remaining limits |
+| --- | --- | --- |
+| Patient Appointment Management | Signed-in patients can search availability, book, view, cancel, and reschedule appointments. Clinic staff with an active membership can view a clinic's daily schedule, edit recurring clinic/staff hours with split intervals according to role, set appointment duration, add unavailable periods, cancel bookings, check patients in, and mark completed/no-show outcomes. Availability, appointment lists, and staff schedules refresh every 15 seconds while open. The database rechecks writes and prevents overlapping active appointments. The default duration is 30 minutes; clinic administrators can select 15–120 minutes in 15-minute increments. | Public signup cannot grant staff roles. A platform administrator can provision an existing verified Auth account through a restricted interface. Automatic background reminders are not configured. |
+| Clinic Finder | Patients manually enter a city or Canadian postal code, set a search radius, filter by service, new-patient status, and availability, and see distance-sorted clinic cards with next availability. The search does not request device location or save the typed location. Next availability follows the clinic's configured appointment duration. | Clinic/provider examples and lookup points for Ottawa, K1N, and K2G are synthetic. No real verified listings have been imported. The local CSV workflow validates HTTPS provenance and a 25 km radius from uOttawa, and only writes to local Supabase. Distance is approximate straight-line distance from a configured lookup point. |
+| Database and Data Management | Supabase Auth manages account credentials and sessions. PostgreSQL stores the minimal booking profile (name and optional phone), clinics, memberships, schedules, appointments, waitlists, announcements, accessibility preferences, notifications, and audit records. RLS limits patient and staff access. Booking and appointment changes use validated database functions; exclusion constraints prevent overlapping active appointments for staff and patients. Selected changes, patient appointment reads, clinic schedule reads, and rejected booking attempts are audited without names or contact details. | Audit coverage is not comprehensive: other reads and failed actions are not recorded. The schema and tests are a course prototype, not a production security or privacy certification. |
+| Accessibility Settings | Signed-in users can save language preference, text size, high contrast, and text-to-speech settings. Saved preferences are restored after sign-in. Text size and contrast are applied; supported browsers can read appointment information aloud. Fixed interface labels and help content have English/French versions. | Clinic and staff-entered information remains in its source language, and some database-generated errors may remain English. Screen-reader and physical-device accessibility testing remains to be done. |
+| Notification System | Database events create generic in-app notices for booking, cancellation, rescheduling, and waitlist offers. The notification centre displays unread notices, supports marking them read, polls every 15 seconds while open, and exposes an unread count in navigation. Appointment events also queue email confirmations, updates, and eligible 24-hour reminders without storing email addresses or email bodies in the outbox. A manually run local worker sends due email jobs to Mailpit. | No hosted email provider or scheduled background worker is configured. SMS/push are not implemented, so delivery while the app is closed is not established. The one-minute external delivery target is unverified. Waitlist offers expire after one hour but do not reserve the slot; acceptance rechecks availability and can fail if another patient books first. |
 
-## Privacy guardrails
-- Collect only the minimum required booking information.
-- Secure access through authentication and role-based checks.
-- Maintain audit logs for key actions, including booking, cancellation, and profile updates.
+## Platform and layout
+
+The web layout uses a 700 CSS-pixel breakpoint, stacked content on narrow screens, two columns on wider screens, and anchor navigation. On narrow layouts, navigation moves to a bottom bar. Capacitor configuration routes signup, verification, and recovery callbacks through the `ca.uottawa.clinicflow://auth-callback` app link. Hosted Supabase Auth must allow this redirect before native authentication can work there. Android/iOS project files are generated, but Android SDK/Gradle and Xcode builds, email-link handoff, and device testing remain unverified.
+
+## Validation completed
+
+- The frontend production build passed after the current feature changes; it reports an informational bundle-size advisory.
+- Frontend lint passes without warnings.
+- `npm.cmd --prefix frontend run cap:sync` copied the current web build and plugin metadata into the Android and iOS shells; native compilation remains unverified.
+- `npm.cmd run db:migrate` applies pending schema changes to local Supabase. Recent migrations align Clinic Finder availability with appointment duration and add recoverable local email-worker claims.
+- `npm.cmd run db:test` passed 66 pgTAP assertions, covering booking, waitlists, role boundaries, split schedules, directory provenance, audit behavior, and configured appointment-duration search results.
+- Synthetic queued and stale-claimed email jobs were marked sent by the local worker and captured in Mailpit. These checks do not test hosted delivery, concurrent live traffic, mobile builds, or physical devices.
+
+See [Deliverable D alignment](DELIVERABLE_D_ALIGNMENT.md) for detailed criteria status and [the detailed-design draft](DELIVERABLE_D_DETAILED_DESIGN.txt) for report-ready wording and figure guidance.

@@ -1,0 +1,183 @@
+CLINICFLOW - DELIVERABLE D DETAILED DESIGN
+GOOGLE DOCS COPY-READY DRAFT AND PHOTO GUIDE
+
+ALIGNMENT NOTE
+
+This draft describes the current React, TypeScript, and Vite implementation and its Capacitor Android/iOS shells. The native projects and custom authentication callback are configured, but native compilation, email-link handoff, and physical-device testing remain unverified. Use solid outlines only for working features and dashed outlines for remaining work.
+
+HOW TO USE THIS FILE
+
+Part 1 is report text for Deliverable D Sections 2 and 3. Copy it into Google Docs, then insert your subsystem photos where the figure placeholders appear. The bracketed photo notes are placeholders to replace.
+
+Part 2 is for the team while drawing. It explains what to put in each photo. Do not paste Part 2 into the report unless your instructor asks for the drawing instructions.
+
+This draft matches the current prototype: React, TypeScript, Vite, Capacitor, Supabase Auth, PostgreSQL, RLS, database constraints, and PostgreSQL operation functions. It states the remaining limits directly.
+
+
+PART 1 - COPY-READY REPORT TEXT
+
+START COPY
+
+2. DETAILED DESIGN - GLOBAL CONCEPT
+
+ClinicFlow is an administrative clinic-finding and appointment application. Patients can create an account, search for clinics, view availability, book, cancel, reschedule, and review upcoming appointments. Clinic staff with an active clinic membership can manage schedules and appointment outcomes. The interface is built with React, TypeScript, and Vite, and is packaged for Android and iOS through Capacitor. The project uses the five subsystems selected in Deliverable C: Patient Appointment Management, Clinic Finder, Database and Data Management, Accessibility Settings, and Notification System.
+
+The application communicates with Supabase over HTTPS. Supabase Auth manages account registration, email verification, login, sessions, password recovery, and password changes. The frontend uses the signed-in user's session to make database requests. PostgreSQL stores clinic, staff, schedule, appointment, minimal booking-profile, waitlist, accessibility-preference, announcement, notification, and audit information. Row Level Security (RLS) limits access according to user identity and clinic membership. PostgreSQL functions check availability and validate booking, cancellation, rescheduling, check-in, and appointment-outcome operations. Database constraints reject overlapping active appointments.
+
+Figure 1 shows the system boundary and the main information flow. Solid boxes and arrows represent implemented prototype behavior. Dashed boxes and arrows represent remaining work, including a hosted email provider and scheduled worker, SMS/push delivery, verified clinic listings, and native-device testing.
+
+Figure 1. ClinicFlow global concept and system boundary.
+[INSERT PHOTO OF GLOBAL CONCEPT DRAWING]
+
+The interface adjusts to different screen sizes. At 700 CSS pixels and narrower, content panels stack in one column and anchor navigation moves to a bottom bar. At wider sizes, the main content uses two columns. Capacitor Android and iOS projects are present and were synced with the current web build. Signup/verification/recovery callbacks use the `ca.uottawa.clinicflow://auth-callback` scheme. Native compilation, hosted Auth redirect configuration, and real-device usability testing remain to be completed.
+
+Figure 2. Responsive ClinicFlow interface on a phone and a wider screen.
+[INSERT PHOTO OF RESPONSIVE INTERFACE DRAWING]
+
+
+3. DETAILED DESIGN - SUBSYSTEMS
+
+3.1 PATIENT APPOINTMENT MANAGEMENT
+
+The Patient Appointment Management subsystem lets signed-in patients check availability, book, view, cancel, and reschedule appointments. Patients select a clinic and date. A PostgreSQL function combines clinic hours, staff hours, active clinic membership, existing appointments, schedule blocks, and the clinic time zone to return available slots. The default duration is 30 minutes; clinic administrators can set a duration from 15 to 120 minutes in 15-minute increments.
+
+When a patient chooses a time, a PostgreSQL function checks the session and booking profile, confirms the clinic and time are still available, and inserts the appointment. The database prevents overlapping active bookings for both the staff member and patient. If another request takes the slot first, the function returns an error and the interface refreshes availability. While the page is open, availability, upcoming appointments, and the staff daily schedule refresh every 15 seconds. Cancellation and rescheduling also use database functions and create audit events. Clinic staff can view the daily schedule, update recurring hours, add unavailable periods, check patients in, cancel appointments, and mark completed or no-show outcomes, subject to active clinic membership and role.
+
+The current prototype also supports waitlist joining and leaving. Cancelling a booking can create a one-hour offer for the next eligible waitlisted patient. The offer identifies the newly available time, but it does not reserve the slot; accepting it calls the standard booking function, which rechecks availability and can reject a competing booking. There is no staff-assisted patient booking workflow. Staff can edit multiple recurring intervals per weekday, including split shifts and closed days. A platform administrator can provision an existing verified Auth account for a clinic role; public signup cannot assign elevated access.
+
+Figure 3. Appointment availability and booking data flow.
+[INSERT PHOTO OF APPOINTMENT MANAGEMENT DRAWING]
+
+
+3.2 CLINIC FINDER
+
+The Clinic Finder lets patients search active clinics by manually entering a city or Canadian postal code. Patients can set a maximum distance and filter by service, new-patient status, and appointment availability. The React interface sends these criteria to the PostgreSQL `search_clinics` function. The database resolves the entered location to a configured city or postal-prefix point, calculates approximate straight-line distance from clinic coordinates, applies filters, sorts by distance, and returns next availability. The interface displays clinic name, address, city, province, phone number, description, services, new-patient status, approximate distance, and next available time. Selecting a clinic passes its ID to appointment booking.
+
+The app uses manually entered search text and does not request device location. The search input is used for the request but is not saved in application tables. Local clinic/provider data is synthetic and limited to Ottawa examples, the Ottawa city point, and postal prefixes K1N and K2G. No real verified listing has been imported, so this is not a verified or comprehensive directory. A local CSV import workflow requires HTTPS source details, source record ID/date, coordinates, a time zone, and a location within 25 km of uOttawa. The database excludes unverified records from search and displays synthetic listings as demos. Next availability is based on recurring clinic/staff hours, schedule blocks, and the clinic's configured appointment duration.
+
+Figure 4. Clinic Finder search and clinic-selection flow.
+[INSERT PHOTO OF CLINIC FINDER DRAWING]
+
+
+3.3 DATABASE AND DATA MANAGEMENT
+
+Supabase Auth stores and verifies login credentials. After a user registers, a database trigger creates the matching application profile using the Auth user ID. A patient then completes a minimal booking profile containing their name and optional phone number. ClinicFlow does not store passwords, custom authentication tokens, date of birth, medical records, or clinical notes.
+
+PostgreSQL stores profiles, minimal patient profiles, staff profiles, clinic memberships, clinic hours, staff hours, clinics, appointments, waitlist entries, notifications, announcements, accessibility preferences, schedule blocks, and audit logs. The patient profile stores a name and optional phone number; Supabase Auth stores account credentials. RLS limits patients to their own records and staff to active clinic memberships. Staff/administrator memberships must be assigned through a trusted administrative process and cannot be selected through public signup. The interface includes staff announcement publishing and patient waitlist management.
+
+Availability and booking use PostgreSQL functions. Database constraints prevent overlapping active appointments. Appointment events and changes to patient profiles, clinic memberships, schedules, schedule blocks, announcements, waitlist entries, and accessibility preferences write audit records with actor, action, entity, and time. Narrow database functions also audit patient appointment-list reads, clinic schedule reads, and rejected booking attempts. Audit records do not store patient names, contact information, or booking request contents. Other reads and failed actions are not audited.
+
+Figure 5. ClinicFlow identity, database, access-control, and audit design.
+[INSERT PHOTO OF DATABASE AND DATA MANAGEMENT DRAWING]
+
+
+3.4 ACCESSIBILITY SETTINGS
+
+The Accessibility Settings subsystem lets each signed-in user save English/French language preference, text size, high contrast, and text-to-speech settings. Text size and contrast are applied in the interface. Supported browsers use built-in speech synthesis to read appointment information without sending it to another service. The database stores each user's preferences and RLS restricts them to their owner.
+
+The controls, preference storage, text-size styling, high-contrast styling, English/French labels, and speech behavior are implemented. Saved settings are loaded after sign-in and applied across the interface. Clinic and staff-entered information remains in its source language, and some database-generated errors may remain English. Screen-reader and physical-device testing remain incomplete.
+
+Figure 6. Accessibility preferences from selection through application and storage.
+[INSERT PHOTO OF ACCESSIBILITY DRAWING]
+
+
+3.5 NOTIFICATION SYSTEM
+
+The Notification System creates generic in-app notices for bookings, cancellations, reschedules, and waitlist offers. Clinic announcements appear in the selected clinic's updates. Messages should remain generic and must not include health details; the prototype does not automatically detect sensitive text entered by staff.
+
+Appointment database triggers insert generic in-app notification records and private email outbox jobs for confirmations, cancellation/reschedule updates, and eligible reminders scheduled 24 hours before an appointment. The outbox stores account and appointment identifiers, not email addresses or message bodies. RLS restricts each patient to their own in-app notices. The notification centre polls for new records every 15 seconds while the page is open, shows an unread count, and lets users mark items as read. A local command can process due email jobs through Mailpit, and a synthetic confirmation was captured in the local test. No production provider or scheduled background worker is configured; SMS and push are not implemented.
+
+In-app notices appear while the user is signed in and the application is open. A local email job is delivered only when the local worker is run after it becomes due. If the hosted app is closed, the prototype does not yet run a scheduled worker to deliver a reminder. The one-minute target is not established for production or background delivery and must not be claimed as achieved.
+
+Figure 7. In-app notification flow and proposed external delivery.
+[INSERT PHOTO OF NOTIFICATION SYSTEM DRAWING]
+
+END COPY
+
+
+PART 2 - DRAWING GUIDE FOR THE PHOTOS
+
+Use the same legend on every drawing:
+Solid outline = implemented in the current prototype.
+Dashed outline = planned or not yet verified.
+Label every arrow with the data or action being sent.
+
+FIGURE 1 - GLOBAL CONCEPT
+
+Draw three large boxes from left to right:
+
+1. PATIENT DEVICE: phone, tablet, or desktop browser; optionally show Android/iOS Capacitor shells with a note that native builds are untested.
+2. CLINICFLOW FRONTEND: React, TypeScript, Vite, and Capacitor. Draw Auth/profile, Clinic Finder, Appointment Management, trusted staff provisioning, staff operations, waitlist, accessibility controls, English/French labels, and in-app Notification Centre as solid boxes. Mark native builds and device testing as incomplete.
+3. SUPABASE PROJECT: Supabase Auth; Supabase Data API; PostgreSQL functions; PostgreSQL tables with RLS, constraints, triggers, audit records, and a private email outbox. Draw the hosted email provider, scheduled worker, SMS/push delivery, and broader verified directory as dashed boxes.
+
+Draw these arrows:
+- Browser/app to Supabase Auth: sign up, verify email, log in/out, change password, and recover password.
+- Clinic Finder to the `search_clinics` Supabase RPC: send manual location and selected filters; receive distance-sorted public clinic details and next availability.
+- Appointment Booking to PostgreSQL functions: request available times and book a selected time.
+- Upcoming Appointments to Supabase Data API: read and update the signed-in patient's appointment workflow through validated functions.
+- Appointment triggers to notifications table: booking, cancellation, rescheduling, and waitlist offer notices.
+- Notification Centre to notifications table: read notices and mark them read; poll every 15 seconds while open.
+- PostgreSQL outbox to the local Mailpit worker: local-only email testing. Draw production provider delivery, a scheduled background worker, SMS, and push as proposed.
+
+Put the email or SMS provider outside the Supabase box and label it "provider to be selected." Use dashed outlines for all proposed parts.
+
+FIGURE 2 - RESPONSIVE INTERFACE
+
+Draw a phone outline and a wider tablet or desktop outline side by side. Show the same page content in both: ClinicFlow heading, clinic search, appointment booking, and upcoming appointments. In the phone, draw one column, a stacked header, and the implemented bottom anchor navigation. In the wide layout, draw two content columns and inline anchor navigation. Do not show a side rail; it is not part of the current implementation.
+
+FIGURE 3 - APPOINTMENT MANAGEMENT
+
+Arrange boxes from left to right:
+
+Patient chooses a clinic and date -> React Appointment Booking panel -> appointmentService -> available_appointment_slots PostgreSQL function -> clinic hours, staff hours, memberships, appointments, and schedule_blocks tables.
+
+Then continue the flow:
+
+Patient selects a returned time -> book_appointment PostgreSQL function -> validate user, profile, clinic, schedule, and slot -> insert appointment -> enforce staff and patient overlap constraints -> write audit and notification events -> return confirmation or error -> refresh availability and upcoming appointments.
+
+Draw patient cancellation/rescheduling and staff daily schedule, recurring hours, unavailable periods, appointment duration, check-in, cancellation, completed, and no-show actions as solid. Draw staff-assisted patient booking as dashed.
+
+FIGURE 4 - CLINIC FINDER
+
+Draw boxes from left to right:
+
+Patient manually enters a city or postal code and selects distance/service/new-patient/availability filters -> ClinicFinder React component -> clinicService -> `search_clinics` PostgreSQL function -> private city/postal lookup plus active clinics, coordinates, services, clinic/staff schedules, and appointments -> distance-sorted clinic cards -> selected clinic ID sent to Appointment Booking.
+
+Show the implemented Ottawa synthetic lookup points and clinic fixtures with solid outlines. Mark broader city/postal lookup coverage and verified production clinic data as planned. Write the returned fields beside the clinic cards: name, address, city, province, phone, description, services, new-patient status, approximate distance, and next available appointment time. Note that the lookup resolves manual text to a representative point and does not use device location.
+
+FIGURE 5 - DATABASE AND DATA MANAGEMENT
+
+Draw a large PostgreSQL boundary. Inside it, place profiles; patient_profiles; staff_profiles; clinic_memberships; clinics; clinic_hours and staff_hours; schedule_blocks; appointments; waitlist_entries including expiring offers; notifications; announcements; accessibility_preferences; and audit_logs.
+
+Outside the database, draw Supabase Auth. Connect signup to auth.users, then connect auth.users to a database trigger that creates profiles. Put RLS between the frontend and protected tables. Draw availability and booking functions inside the database boundary. Connect booking to appointments, and appointments to the audit trigger and audit_logs.
+
+Label the patient profile with "name and optional phone only." Label the frontend credential "publishable key plus signed-in user session." Do not draw a service-role key, database password, medical record, or custom password store.
+
+FIGURE 6 - ACCESSIBILITY SETTINGS
+
+Draw the flow:
+
+Patient selects language, text size, contrast, or text-to-speech -> React applies English/French labels, text size/contrast, and browser speech -> Supabase client saves preference -> RLS checks user ownership -> accessibility_preferences table. Mark saved preference loading and core controls solid. Mark screen-reader and real-device validation dashed; note that clinic and staff-entered content stays in its original language.
+
+Use dashed outlines for the controls and behavior because these have not been implemented. The preference table and its fields already exist.
+
+FIGURE 7 - NOTIFICATION SYSTEM
+
+Draw the implemented flow:
+
+Booking, cancellation, reschedule, or eligible cancellation offer -> database trigger -> notifications table -> patient Notification Centre polling every 15 seconds -> mark read.
+
+Add the expiring waitlist offer and its standard booking recheck. Draw the private email outbox and the local Mailpit worker as solid, and show that the local worker is manually run. Use a dashed arrow for hosted provider delivery, a scheduled background worker, SMS, and push. Label messages "generic; no health details" and label waitlist offers "not reserved; booking is revalidated."
+
+
+FINAL TEAM CHECK BEFORE SUBMISSION
+
+- Insert the correct photo at each figure placeholder and keep the figure number and caption.
+- Use solid outlines only for features that are actually implemented; use dashed outlines for planned work.
+- Do not describe ClinicFlow as an EMR. State that staff operations, trusted staff provisioning, and English/French interface labels are implemented. In-app notices work while the app is open; email is queued and locally testable through Mailpit, while hosted provider delivery and automatic background sending are not configured. Clinic Finder currently uses synthetic Ottawa data; the local verified-listing workflow has not imported real clinics.
+- Keep React/Vite as the frontend and describe Capacitor as the Android/iOS packaging approach. State that native compilation, callback handoff, and device testing remain unverified.
+- Use the five subsystem names from Deliverable C consistently; clearly distinguish implemented flows from schema-only or proposed work.
+- Make the BOM and test plan use the same technologies and feature scope as these subsystem designs, and include objective pass criteria for every target.
+- Complete task owners, estimates, dates, current progress evidence, and conclusions rather than leaving the PDF template prompts in place.
+- Add the custom callback URL to hosted Supabase Auth redirect settings before using native email verification or password recovery. Keep local-only migrations and imported listings out of the hosted project until its state and deployment plan are reviewed by the project owner.
+- Keep using synthetic data in the prototype.
