@@ -805,6 +805,7 @@
 
 .clinic-search-fields {
   display: grid;
+  align-items: start;
   grid-template-columns: minmax(0, 2fr) minmax(140px, 1fr);
   gap: 12px;
 }
