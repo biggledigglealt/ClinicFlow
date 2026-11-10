@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.DEV
-  ? `${window.location.origin}/supabase`
-  : import.meta.env.VITE_SUPABASE_URL
+const supabaseUrl = new URL(
+  import.meta.env.VITE_SUPABASE_URL || '/supabase',
+  window.location.origin,
+).toString()
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
 if (!supabasePublishableKey || !supabaseUrl) {

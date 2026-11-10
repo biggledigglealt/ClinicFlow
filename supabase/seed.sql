@@ -24,7 +24,7 @@ values
         45.4215,
         -75.6972,
         'Synthetic clinic record for local development.',
-        array['Family medicine', 'Walk-in']::text[],
+        array['Family medicine', 'Walk-in', 'Pediatrics', 'Dermatology', 'Physiotherapy', 'Mental health', 'Vaccinations', 'Blood tests']::text[],
         true,
         true,
         'demo'
