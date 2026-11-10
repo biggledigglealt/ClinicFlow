@@ -128,14 +128,20 @@ function App() {
         const callbackParams = new URLSearchParams(callbackUrl.hash.slice(1))
         const callbackError = callbackUrl.searchParams.get('error_description')
           ?? callbackParams.get('error_description')
-        if (callbackError) throw new Error(callbackError)
+        if (callbackError) {
+          if (active) setAuthError(callbackError)
+          return
+        }
 
         const code = callbackUrl.searchParams.get('code')
         const isRecovery = callbackUrl.searchParams.get('type') === 'recovery'
           || callbackParams.get('type') === 'recovery'
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code)
-          if (error) throw error
+          if (error) {
+            if (active) setAuthError(error.message)
+            return
+          }
         } else {
           const accessToken = callbackParams.get('access_token')
           const refreshToken = callbackParams.get('refresh_token')
@@ -144,7 +150,10 @@ function App() {
             access_token: accessToken,
             refresh_token: refreshToken,
           })
-          if (error) throw error
+          if (error) {
+            if (active) setAuthError(error.message)
+            return
+          }
         }
         setShowAuth(false)
         setAuthError('')

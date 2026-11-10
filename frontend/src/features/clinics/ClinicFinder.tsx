@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLanguage, useTranslate } from '../../lib/i18n'
 import {
   listClinicServiceOptions,
@@ -6,6 +6,8 @@ import {
   type Clinic,
   type ClinicSearchOptions,
 } from '../../services/clinicService'
+
+type SortOption = 'nearest' | 'earliest' | 'alphabetical'
 
 interface ClinicFinderProps {
   selectedClinicId: string | null
@@ -28,6 +30,29 @@ function formatNextAvailable(value: string, timeZone: string, language: 'en' | '
   }).format(new Date(value))
 }
 
+function sortClinics(clinics: Clinic[], sortBy: SortOption) {
+  const sorted = [...clinics]
+
+  switch (sortBy) {
+    case 'earliest':
+      sorted.sort((a, b) => {
+        const aTime = a.next_available_at ? new Date(a.next_available_at).getTime() : Number.MAX_SAFE_INTEGER
+        const bTime = b.next_available_at ? new Date(b.next_available_at).getTime() : Number.MAX_SAFE_INTEGER
+        return aTime - bTime || a.distance_km - b.distance_km
+      })
+      break
+    case 'alphabetical':
+      sorted.sort((a, b) => a.name.localeCompare(b.name))
+      break
+    case 'nearest':
+    default:
+      sorted.sort((a, b) => a.distance_km - b.distance_km || a.name.localeCompare(b.name))
+      break
+  }
+
+  return sorted
+}
+
 export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderProps) {
   const t = useTranslate()
   const language = useLanguage()
@@ -38,6 +63,8 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [acceptingNewPatients, setAcceptingNewPatients] = useState(false)
   const [onlyWithAvailability, setOnlyWithAvailability] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>('nearest')
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
    const [sortBy, setSortBy] = useState('distance')
@@ -163,6 +190,26 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
           </label>
         </div>
 
+        <div className="clinic-search-fields clinic-search-secondary-row">
+          <label htmlFor="clinic-sort-search">
+            {t('Sort by')}
+            <select
+              id="clinic-sort-search"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value as SortOption)}
+            >
+              <option value="nearest">{t('Nearest clinic')}</option>
+              <option value="earliest">{t('Earliest appointment')}</option>
+              <option value="alphabetical">{t('Alphabetical')}</option>
+            </select>
+          </label>
+
+          <div className="clinic-search-meta" aria-live="polite">
+            <span>{t('Search results')}</span>
+            <strong>{sortedClinics.length}</strong>
+          </div>
+        </div>
+
         <fieldset className="clinic-service-filter">
           <legend>{t('Services')}</legend>
           {serviceOptions.length > 0 ? (
@@ -253,39 +300,20 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
                       {t('Verified from')} {clinic.source_name} {t('on')} {clinic.source_checked_on}
                       {clinic.source_url && <> · <a href={clinic.source_url} target="_blank" rel="noreferrer">{t('View source')}</a></>}
                     </p>
-                  )}
-                  <p>{clinic.address}</p>
-                  {locationLabel && <p>{locationLabel}</p>}
-                  {clinic.description && <p>{clinic.description}</p>}
-                  {clinic.phone && <p><strong>{t('Phone:')}</strong> <a href={'tel:' + clinic.phone.replace(/[^+\d]/g, '')}>{clinic.phone}</a></p>}
-                  <p><strong>{t('Approx. distance:')}</strong> {clinic.distance_km.toFixed(1)} km</p>
-                  <p>
-                    <strong>{t('Services:')}</strong>{' '}
-                    {clinic.services.length > 0 ? clinic.services.join(', ') : t('Not listed')}
-                  </p>
-                  <p>
-                    <strong>{t('New patients:')}</strong>{' '}
-                    {clinic.accepting_new_patients ? t('Accepted') : t('Not currently accepted')}
-                  </p>
-                  <p>
-                    <strong>{t('Next available:')}</strong>{' '}
-                    {clinic.next_available_at
-                      ? formatNextAvailable(clinic.next_available_at, clinic.time_zone, language)
-                      : t('No opening found in the next 60 days')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="clinic-select-button"
-                  aria-pressed={isSelected}
-                  onClick={() => onSelectClinic(clinic)}
-                >
-                  {isSelected ? t('Selected') : t('Select clinic')}
-                </button>
-              </article>
-            )
-          })}
-        </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="clinic-select-button"
+                    aria-pressed={isSelected}
+                    onClick={() => onSelectClinic(clinic)}
+                  >
+                    {isSelected ? t('Selected') : t('View times')}
+                  </button>
+                </article>
+              )
+            })}
+          </div>
+        </>
       ) : (
         <p>{t('No clinics match these search options. Try a larger distance or remove a filter.')}</p>
       )}

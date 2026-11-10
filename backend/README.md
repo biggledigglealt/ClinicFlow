@@ -20,18 +20,14 @@ The frontend has a Supabase client and basic signup, login, logout, and current-
 
 ## Local database work
 
-From the repository root, install dependencies and start the local Supabase services (Docker required):
+From the repository root, install dependencies and start the full local app (Docker required):
 
 ```sh
-npm ci
-npm ci --prefix frontend
-npm run db:start
-npm run db:migrate
-npm run db:test
-npm run db:stop
+npm run setup
+npm run dev
 ```
 
-`db:reset` deletes local Auth users and database records, so use it only when a clean local database is intentional. The database tests live in `supabase/tests/database/rls.test.sql`. To connect the Vite app to local Supabase, copy `frontend/.env.example` to the ignored `frontend/.env.local` and use the API URL and publishable key printed by the CLI.
+The app command starts Supabase, applies migrations, loads synthetic data, and configures the local frontend connection. No `.env.local` file is needed. Run `npm run db:test` to run the database tests. `db:reset` deletes local Auth users and database records, so use it only when a clean local database is intentional. The database tests live in `supabase/tests/database/rls.test.sql`.
 
 A terminal transcript in the in-progress deliverable reports that a hosted project was linked and migrations were pushed, but this checkout's current remote state has not been verified. Confirm the linked project and migration history with its owner before any further hosted changes. Hosted Auth redirect URLs, email settings, and a security review also need confirmation before real use.
 
