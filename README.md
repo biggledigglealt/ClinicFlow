@@ -6,7 +6,7 @@ ClinicFlow is a course prototype for clinic search, appointment scheduling, and 
 
 The current integration branch is `feature/supabase-foundation`. It contains the Supabase-backed application and is ahead of `main`. Team feature work should branch from this integration branch, go through pull requests back into it, and be merged to `main` after integration checks pass.
 
-A Vercel site is available at [clinic-flow-sigma-snowy.vercel.app](https://clinic-flow-sigma-snowy.vercel.app/), but its deployed frontend does not currently appear to match the Supabase-connected code in this branch. Treat that URL as unverified and do not use it for client testing until a preview or production deployment is checked with working sign-in, clinic search, and booking.
+A Vercel site is available at [clinic-flow-sigma-snowy.vercel.app](https://clinic-flow-sigma-snowy.vercel.app/)
 
 The validated database environment is local Supabase. Hosted Supabase configuration and migration history have not been verified. Review the hosted project with its owner before deploying migrations or configuring production access.
 
