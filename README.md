@@ -12,13 +12,28 @@ You do not need to install coding tools on your own computer. Use GitHub Codespa
 2. Alternatively, open this repository on GitHub, select the green **Code** button, then the **Codespaces** tab and select **Create codespace on main**.
 3. Wait for setup to finish. Codespaces installs Node.js and the project dependencies automatically.
 4. In VS Code, open **Terminal → New Terminal**. A terminal is where you type commands for the project.
-5. Copy and run:
+5. ClinicFlow needs its local Supabase services for signup, login, and scheduling. Make sure Docker is available, then start Supabase:
+
+   ```sh
+   npm run db:start
+   ```
+
+   Wait for the command to finish and note the publishable key it prints.
+6. Copy `frontend/.env.example` to `frontend/.env.local`. In Codespaces, set `VITE_SUPABASE_URL` to the forwarded HTTPS URL for port `54321` (shown in the **Ports** tab), and set `VITE_SUPABASE_PUBLISHABLE_KEY` to the publishable key from `npm run db:start`. Do not use `127.0.0.1` as the browser-facing API URL in Codespaces. Restart Vite after changing `.env.local`.
+7. Apply the database schema and load the synthetic sample records:
+
+   ```sh
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+8. Start the app:
 
    ```sh
    npm run dev
    ```
 
-6. When Codespaces shows that port `5173` is ready, select **Open in Browser** to see the app. Keep the terminal running while you use the app. To stop it, click the terminal and press `Ctrl+C`.
+9. When Codespaces shows that port `5173` is ready, select **Open in Browser** to see the app. Keep the terminal running while you use the app. To stop it, click the terminal and press `Ctrl+C`. Stop Supabase separately with `npm run db:stop` when you are finished.
 
 The Codespace runs the project in a Linux container, so the computer you use to access it does not change the setup. The same steps work from a Windows Intel laptop and a MacBook with Apple silicon.
 

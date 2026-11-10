@@ -3,7 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { login, logout, register, requestPasswordReset, resendSignupVerification } from './lib/auth'
-import { getLocalEmailPreviewUrl, supabase } from './lib/supabase'
+import { getLocalEmailPreviewUrl, isSupabaseConfigured, supabase } from './lib/supabase'
 import { LanguageProvider } from './lib/LanguageProvider'
 import { translate } from './lib/i18n'
 import { PatientProfilePanel } from './components/PatientProfilePanel'
@@ -45,7 +45,7 @@ function SectionIcon({ section }: { section: AppSection }) {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="section-icon"><path d={paths[section]} /></svg>
 }
 
-function App() {
+function ClinicFlowApp() {
   const [user, setUser] = useState<User | null>(null)
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
@@ -521,6 +521,27 @@ function App() {
     </div>
     </LanguageProvider>
   )
+}
+
+function App() {
+  if (!isSupabaseConfigured) {
+    return (
+      <main className="setup-required">
+        <section className="setup-required__content" aria-labelledby="setup-title">
+          <p className="setup-required__eyebrow">ClinicFlow local development</p>
+          <h1 id="setup-title">Supabase setup required</h1>
+          <p>ClinicFlow needs a Supabase URL and publishable key to load account and scheduling features.</p>
+          <ol>
+            <li>Start Docker, then run <code>npm run db:start</code> from the project root.</li>
+            <li>Copy <code>frontend/.env.example</code> to <code>frontend/.env.local</code>.</li>
+            <li>Set the local URL and publishable key printed by Supabase, then restart <code>npm run dev</code>.</li>
+          </ol>
+        </section>
+      </main>
+    )
+  }
+
+  return <ClinicFlowApp />
 }
 
 export default App

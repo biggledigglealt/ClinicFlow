@@ -1,0 +1,636 @@
+/* STYLES: colours, spacing and the look of everything.
+   The :root block holds the colours, so you can change the theme in one place. */
+
+:root {
+  --primary: #00695c;
+  --primary-container: #b2dfdb;
+  --surface: #fbfdfc;
+  --surface-low: #f1f5f4;
+  --outline: #6b7f73;
+  --outline-variant: #c3cfca;
+  --error: #b3261e;
+  --text: #191c1b;
+  --muted: #4a5f53;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+/* ---------- UI SCALE FOR LARGE SCREENS (4K, TVs) ----------
+   Every size above is in rem, so changing the root font-size below scales
+   the WHOLE interface together: text, icons, buttons, spacing and cards.
+   The screen width tiers match common displays:
+     under 2200px   normal size (1x)
+     2200px and up  1.25x   (large monitors, 1440p ultrawide)
+     2560px and up  1.5x    (QHD / 4K shown at 150% or less zoom)
+     3400px and up  2x      (true 4K at 100%, big TVs)
+   Note: if Windows/macOS display scaling is already 150-200%, the browser reports
+   a smaller width (about 1920-2560px) and the interface is already enlarged. */
+html {
+  font-size: 16px;
+}
+@media (min-width: 2200px) {
+  html { font-size: 20px; }
+}
+@media (min-width: 2560px) {
+  html { font-size: 24px; }
+}
+@media (min-width: 3400px) {
+  html { font-size: 32px; }
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+/* ---------- OVERALL FRAME ---------- */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0; /* lets the page scroll inside instead of growing the window */
+}
+.main-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- TOP BAR ---------- */
+.appbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 3.5rem;
+  padding: 0 0.5rem 0 0.75rem;
+  background: var(--primary);
+  color: #fff;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.appbar-spacer {
+  flex: 1;
+}
+.icon-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+}
+.icon-btn.dark {
+  color: var(--text);
+}
+.icon-btn:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.2);
+}
+.icon-btn:disabled {
+  opacity: 0.35;
+}
+
+/* EN / FR switch */
+.seg {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.seg button {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+}
+.seg button[aria-pressed='true'] {
+  background: #fff;
+  color: var(--primary);
+}
+
+/* Red number on top of an icon (unread count) */
+.badge-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.badge {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.5625rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.25rem;
+  border-radius: 0.5625rem;
+  background: var(--error);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- SIDE RAIL (wide layouts) ---------- */
+.rail {
+  width: 5.5rem;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0.5rem;
+  background: var(--surface-low);
+  border-right: 1px solid var(--outline-variant);
+  overflow-y: auto;
+}
+.rail.extended {
+  width: 13.75rem;
+}
+.rail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 3.5rem;
+  padding: 0.625rem 0.25rem;
+  border: 0;
+  border-radius: 1rem;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8125rem;
+}
+.rail.extended .rail-item {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+}
+.rail-item:hover {
+  background: rgba(0, 105, 92, 0.08);
+}
+.rail-item.selected {
+  background: var(--primary-container);
+  font-weight: 700;
+}
+
+/* ---------- FOOTER (wide layouts) ---------- */
+.footer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 1rem;
+  background: var(--surface-low);
+  border-top: 1px solid var(--outline-variant);
+}
+
+/* ---------- BOTTOM NAVIGATION (phone) ---------- */
+.bottom-nav {
+  display: flex;
+  background: var(--surface-low);
+  border-top: 1px solid var(--outline-variant);
+}
+.bottom-item {
+  flex: 1;
+  min-height: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.75rem;
+}
+.bottom-icon {
+  display: inline-flex;
+  padding: 0.25rem 1.25rem;
+  border-radius: 1rem;
+}
+.bottom-item.selected {
+  font-weight: 700;
+}
+.bottom-item.selected .bottom-icon {
+  background: var(--primary-container);
+}
+
+/* ---------- HAMBURGER MENU, POP-UPS, MESSAGES ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.overlay.left {
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: 0;
+}
+.drawer {
+  width: min(18.75rem, 85vw);
+  background: var(--surface);
+  padding: 0.5rem 0;
+  overflow-y: auto;
+}
+.drawer-title {
+  padding: 1rem;
+  font-size: 1.375rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.drawer-item {
+  width: 100%;
+  min-height: 3.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: var(--text);
+}
+.drawer-item:hover {
+  background: var(--surface-low);
+}
+.dialog {
+  width: min(26.25rem, 100%);
+  background: #fff;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.dialog h2 {
+  font-size: 1.375rem;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: 5.5rem;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  background: #2f3130;
+  color: #fff;
+}
+
+/* ---------- PAGE CONTENT ---------- */
+.content-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.content {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.flow-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.flow-header h1 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+.subtitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.label,
+.strong {
+  font-weight: 700;
+}
+.label {
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.muted {
+  color: var(--muted);
+}
+.grid {
+  display: grid;
+}
+
+/* ---------- BUTTONS ---------- */
+.btn {
+  min-height: 3rem;
+  padding: 0 1.5rem;
+  border: 2px solid transparent;
+  border-radius: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+.btn-filled {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-tonal {
+  background: var(--primary-container);
+  color: #00201c;
+}
+.btn-outlined {
+  background: transparent;
+  color: var(--primary);
+  border-color: var(--outline);
+}
+.btn-text {
+  background: transparent;
+  color: var(--primary);
+  padding: 0 0.75rem;
+}
+.btn-danger {
+  background: var(--error);
+  color: #fff;
+}
+.btn:disabled {
+  background: #e3e6e5;
+  color: #6b6f6e;
+  border-color: transparent;
+}
+.btn-outlined:disabled {
+  background: transparent;
+  border-color: var(--outline-variant);
+}
+.btn-text:disabled {
+  background: transparent;
+}
+.time-btn {
+  width: 100%;
+}
+.card .btn {
+  margin-top: 0.75rem;
+}
+
+/* ---------- CARDS AND LISTS ---------- */
+.card {
+  background: #fff;
+  border: 1px solid var(--outline-variant);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+.card p + p {
+  margin-top: 0.25rem;
+}
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0;
+}
+.chip {
+  display: inline-block;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--outline);
+  border-radius: 0.5rem;
+}
+.confirmed {
+  text-align: center;
+}
+.big-check {
+  display: block;
+  color: #2e7d32;
+  margin-bottom: 0.75rem;
+}
+
+/* Home buttons (each sets its own colours with --c and --f) */
+.home-btn {
+  width: 100%;
+  min-height: 4.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--c);
+  border-radius: 0.5rem;
+  background: var(--f);
+  color: #1b1b1b;
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-align: left;
+}
+.home-btn svg {
+  color: var(--c);
+  flex: none;
+}
+
+/* Clinic list items */
+.clinic-tile {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 2px solid var(--outline-variant);
+  border-radius: 0.5rem;
+  background: #e9eeec;
+  color: var(--text);
+  text-align: left;
+}
+.clinic-tile.selected {
+  background: var(--primary-container);
+  border-color: var(--primary);
+}
+.clinic-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.km {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Notifications */
+.notif {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+  color: var(--text);
+}
+.notif-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.notif.unread .notif-title {
+  font-weight: 700;
+}
+.dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* ---------- FORMS ---------- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.form label,
+.field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-weight: 600;
+}
+.form label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  font-weight: 400;
+}
+input[type='text'],
+input[type='search'],
+select {
+  min-height: 3rem;
+  padding: 0 0.75rem;
+  border: 2px solid var(--outline);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--text);
+  width: 100%;
+}
+input[type='checkbox'] {
+  width: 1.375rem;
+  height: 1.375rem;
+  accent-color: var(--primary);
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+legend {
+  padding: 0;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+/* ---------- CALENDAR ---------- */
+.calendar-wrap {
+  display: flex;
+  justify-content: center;
+}
+.calendar {
+  width: 100%;
+  max-width: 25rem;
+  background: #fff;
+  border: 1px solid var(--outline-variant);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+}
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.cal-weekday {
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 0.25rem 0;
+}
+.cal-day {
+  aspect-ratio: 1;
+  min-height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+}
+.cal-day:hover:not(:disabled) {
+  background: var(--primary-container);
+}
+.cal-day[aria-pressed='true'] {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+}
+.cal-day:disabled {
+  color: #9aa6a0;
+}
