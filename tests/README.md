@@ -1,14 +1,22 @@
 # Automated validation plan
 
-This folder is intended for initial smoke tests and prototype validation.
+Run the existing prototype and frontend checks from the repository root:
 
-## Suggested checks
-- appointment booking flow
-- no double-booking on overlapping availability
-- clinic search results and selection
-- accessibility preference persistence
-- notification generation for reminders and updates
-- audit trail creation for user actions
+```sh
+node --test backend/*.test.mjs
+npm --prefix frontend run lint
+npm --prefix frontend run build
+```
 
-## Scope
-Tests should validate the deliverable-flow behavior without introducing clinical or treatment-related logic.
+The PostgreSQL Row Level Security integration tests use synthetic accounts and fixtures. They require Docker and the local Supabase services:
+
+```sh
+npm run db:start
+npm run db:reset
+npm run db:test
+npm run db:stop
+```
+
+The current database test checks patient, clinic staff, and audit-log access boundaries, plus the overlapping-appointment constraints, in `supabase/tests/database/rls.test.sql`. It does not yet cover concurrent booking requests, booking-hours validation, cancellation, rescheduling, notifications, or administrator provisioning; those depend on database functions and workflows that are not implemented yet.
+
+Tests must not introduce clinical or treatment-related logic or use real patient information.

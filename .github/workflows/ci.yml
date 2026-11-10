@@ -21,7 +21,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+
+      - name: Install repository tooling
+        run: npm ci
 
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
@@ -34,3 +39,16 @@ jobs:
 
       - name: Build frontend
         run: npm --prefix frontend run build
+
+      - name: Start local Supabase
+        run: npm run db:start
+
+      - name: Apply migrations
+        run: npm run db:reset
+
+      - name: Run database access tests
+        run: npm run db:test
+
+      - name: Stop local Supabase
+        if: always()
+        run: npm run db:stop

@@ -1,3 +1,7 @@
+// Legacy prototype helpers. The application uses Supabase Auth; do not use these
+// custom tokens as credentials or treat this module as a running API server.
+import { getSchemaSummary } from './schema.mjs'
+
 const TOKEN_BYTES = 32
 
 export function generateApiToken() {
@@ -27,45 +31,7 @@ export function createAuditLog(actionType, details, actorId = 'system') {
 }
 
 export function createDatabaseSchema() {
-  return {
-    patients: {
-      patientId: 'string',
-      firstName: 'string',
-      lastName: 'string',
-      dob: 'date',
-      contact: 'string',
-      registrationDate: 'datetime',
-    },
-    staff: {
-      staffId: 'string',
-      firstName: 'string',
-      lastName: 'string',
-      role: 'string',
-      availability: 'json',
-    },
-    clinics: {
-      clinicId: 'string',
-      name: 'string',
-      address: 'string',
-      contact: 'string',
-    },
-    appointments: {
-      appointmentId: 'string',
-      patientId: 'string',
-      staffId: 'string',
-      clinicId: 'string',
-      date: 'date',
-      time: 'time',
-      status: 'string',
-    },
-    auditLogs: {
-      logId: 'string',
-      actionType: 'string',
-      actorId: 'string',
-      timestamp: 'datetime',
-      details: 'string',
-    },
-  }
+  return getSchemaSummary()
 }
 
 export function createSessionTokenRecord(userId, token = generateApiToken()) {

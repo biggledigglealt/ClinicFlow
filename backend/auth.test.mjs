@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createAuditLog, generateApiToken, isValidToken } from './auth.mjs'
 
-test('generateApiToken creates a 64-character secure token', () => {
+test('legacy token prototype returns a 64-character hexadecimal value', () => {
   const token = generateApiToken()
   assert.equal(token.length, 64)
   assert.match(token, /^[a-f0-9]+$/i)

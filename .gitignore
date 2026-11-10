@@ -5,6 +5,7 @@ dist/
 !.env.example
 *.log
 .DS_Store
+.idea/
 
 .vscode/*
 !.vscode/extensions.json
