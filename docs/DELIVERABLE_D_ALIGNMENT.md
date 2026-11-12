@@ -1,6 +1,6 @@
 # Deliverable D alignment and prototype status
 
-This status note describes the locally implemented prototype and its local validation. ClinicFlow is an administrative clinic-finding and appointment system; it does not store clinical notes or provide clinical decisions. Use synthetic data only. A later read-only check of hosted Auth and clinic search is recorded in [Investor demo readiness](INVESTOR_READINESS.md); that check did not establish the hosted migration history or authenticated appointment flows.
+This status note describes the locally implemented prototype and its local validation. ClinicFlow is an administrative clinic-finding and appointment system; it does not store clinical notes or provide clinical decisions. Use synthetic data only. A read-only check of hosted Auth and clinic search did not establish the hosted migration history or authenticated appointment flows.
 
 ## Detailed-design criteria and implementation
 
