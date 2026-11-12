@@ -15,6 +15,7 @@ import { StaffOperationsPanel } from './components/StaffOperationsPanel'
 import { HelpCenter } from './components/HelpCenter'
 import { PlatformAdminPanel } from './components/PlatformAdminPanel'
 import { AppointmentBookingPanel } from './features/appointments/AppointmentBookingPanel'
+import { CalendarPage } from './features/calendar/CalendarPage'
 import { ClinicFinder } from './features/clinics/ClinicFinder'
 import type { Clinic } from './services/clinicService'
 import { defaultAccessibilityPreferences, getAccessibilityPreferences, type AccessibilityPreferences } from './services/operationsService'
@@ -22,7 +23,7 @@ import './App.css'
 
 const localEmailPreviewUrl = getLocalEmailPreviewUrl()
 
-type AppSection = 'home' | 'profile' | 'settings' | 'notifications' | 'help' | 'staff_access'
+type AppSection = 'home' | 'calendar' | 'profile' | 'settings' | 'notifications' | 'help' | 'staff_access'
 
 function BellIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="ui-icon"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
@@ -35,6 +36,7 @@ function MenuIcon() {
 function SectionIcon({ section }: { section: AppSection }) {
   const paths: Record<AppSection, string> = {
     home: 'M3 10.5 12 3l9 7.5M5.5 9v11h13V9M9 20v-6h6v6',
+    calendar: 'M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z',
     profile: 'M20 21a8 8 0 0 0-16 0M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
     settings: 'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 3.1-.2-.1a1.7 1.7 0 0 0-1.8.1l-.2.1h-3.6l-.1-.2a1.7 1.7 0 0 0-1.6-1l-.2.1-3.1-1.8.1-.2a1.7 1.7 0 0 0-.1-1.8l-.1-.2v-3.6l.2-.1a1.7 1.7 0 0 0 1-1.6l-.1-.2 1.8-3.1.2.1a1.7 1.7 0 0 0 1.8-.1l.2-.1h3.6l.1.2a1.7 1.7 0 0 0 1.6 1l.2-.1 3.1 1.8-.1.2a1.7 1.7 0 0 0 .1 1.8l.1.2v3.6l-.2.1a1.7 1.7 0 0 0-1 1.6Z',
     notifications: 'M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
@@ -278,6 +280,7 @@ function App() {
 
   const sectionTitle: Record<AppSection, string> = {
     home: 'Appointment & clinic access',
+    calendar: 'Calendar',
     profile: 'Your profile',
     settings: 'Accessibility settings',
     notifications: 'Notifications',
@@ -287,7 +290,7 @@ function App() {
 
   return (
     <LanguageProvider language={accessibilityPreferences.language}>
-    <div className={"app-shell text-size-" + accessibilityPreferences.text_size + (accessibilityPreferences.high_contrast ? " high-contrast" : "")}>
+    <div className={"app-shell text-size-" + accessibilityPreferences.text_size + (accessibilityPreferences.high_contrast ? " high-contrast" : "") + (activeSection === 'calendar' ? " calendar-active" : "")}>
       <a className="skip-link" href="#main-content">{t('Skip to content')}</a>
       {isMobileMenuOpen && <button type="button" className="navigation-scrim" aria-label={t('Close navigation menu')} onClick={() => setIsMobileMenuOpen(false)} />}
 
@@ -299,6 +302,7 @@ function App() {
           </div>
           <nav className="rail-navigation" aria-label={t('Main navigation')}>
             <button type="button" className="rail-link" aria-current={activeSection === 'home' ? 'page' : undefined} onClick={() => navigateTo('home')}><SectionIcon section="home" />{t('Home')}</button>
+            <button type="button" className="rail-link" aria-current={activeSection === 'calendar' ? 'page' : undefined} onClick={() => navigateTo('calendar')}><SectionIcon section="calendar" />{t('Calendar')}</button>
             <button type="button" className="rail-link" aria-current={activeSection === 'settings' ? 'page' : undefined} onClick={() => navigateTo('settings')}><SectionIcon section="settings" />{t('Settings')}</button>
             <button type="button" className="rail-link" aria-current={activeSection === 'profile' ? 'page' : undefined} onClick={() => navigateTo('profile')}><SectionIcon section="profile" />{t('Profile')}</button>
             {isPlatformAdmin && <button type="button" className="rail-link" aria-current={activeSection === 'staff_access' ? 'page' : undefined} onClick={() => navigateTo('staff_access')}><SectionIcon section="staff_access" />{t('Staff access')}</button>}
@@ -484,6 +488,17 @@ function App() {
               </>
             )}
 
+            {activeSection === 'calendar' && (
+              <CalendarPage
+                preferredClinicId={selectedClinic?.id ?? null}
+                userId={user?.id ?? null}
+                hasPatientProfile={hasPatientProfile}
+                onLoginRequest={openLogin}
+                onOpenProfile={() => navigateTo('profile')}
+                onAppointmentsChanged={() => setAppointmentsRefreshToken((token) => token + 1)}
+              />
+            )}
+
             {user && (
               <div className="settings-page-grid" hidden={activeSection !== 'profile'}>
                 <PatientProfilePanel key={user.id} userId={user.id} onProfileReady={setHasPatientProfile} />
@@ -524,6 +539,7 @@ function App() {
 
       <nav className="mobile-bottom-navigation" aria-label="Main navigation">
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'home' ? 'page' : undefined} onClick={() => navigateTo('home')}><SectionIcon section="home" />{t('Home')}</button>
+        <button type="button" className="mobile-nav-link" aria-current={activeSection === 'calendar' ? 'page' : undefined} onClick={() => navigateTo('calendar')}><SectionIcon section="calendar" />{t('Calendar')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'profile' ? 'page' : undefined} onClick={() => navigateTo('profile')}><SectionIcon section="profile" />{t('Profile')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'settings' ? 'page' : undefined} onClick={() => navigateTo('settings')}><SectionIcon section="settings" />{t('Settings')}</button>
       </nav>

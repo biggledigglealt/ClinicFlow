@@ -27,6 +27,24 @@ export interface ClinicSearchOptions {
   onlyWithAvailability: boolean
 }
 
+export interface CalendarClinic {
+  id: string
+  name: string
+  time_zone: string
+}
+
+export async function listCalendarClinics() {
+  const { data, error } = await supabase
+    .from('clinics')
+    .select('id, name, time_zone')
+    .eq('is_active', true)
+    .in('listing_status', ['demo', 'verified'])
+    .order('name')
+
+  if (error) throw error
+  return (data ?? []) as CalendarClinic[]
+}
+
 export async function searchClinics(options: ClinicSearchOptions) {
   const { data, error } = await supabase.rpc('search_clinics', {
     p_location: options.location,
