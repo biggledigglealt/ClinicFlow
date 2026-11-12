@@ -3,6 +3,8 @@
 **Evidence cutoff:** 2026-11-12  
 **Use:** Internal working draft for investor preparation. Hypotheses below are not market claims.
 
+The [investor discussion outline](INVESTOR_PITCH_OUTLINE.md) organizes a future deck and marks unresolved claims. It is not ready to circulate.
+
 ## Product
 
 ClinicFlow is a web prototype for clinic discovery, appointment booking, and lightweight scheduling operations. Patients can search and compare clinics and request available times. Clinic staff workflows cover schedules and appointment operations. The product is administrative; it does not replace an EMR or provide clinical care.
@@ -19,9 +21,9 @@ ClinicFlow is a web prototype for clinic discovery, appointment booking, and lig
 
 ## Evidence available
 
-- The repository contains a course project brief and one [recorded client feedback conversation](../Deliverables/GNG1103_Deliverable_A-D.md). The client asked how the proposed monthly price was researched and recommended more clinic/patient research and investigation of existing-system integrations.
-- The current hosted app has two active synthetic clinic listings. An Ottawa search within 25 km returns both demo results.
-- The prototype has local database tests and hosted public Auth/search endpoints. A complete hosted account-to-booking flow has not been verified in this review.
+- One course-project feedback conversation is summarized in the [investor-safe evidence note](client-feedback-summary.md). The participant asked how the draft monthly price was researched and recommended more clinic/patient research and investigation of existing-system integrations. This is exploratory feedback, not purchase or pricing validation.
+- The current hosted app has two active synthetic clinic listings. An Ottawa search within 25 km returns both demo results. The repository seed gives them identical weekday clinic/provider hours, which produces matching baseline slots in the demo data.
+- The prototype has local database tests and hosted public Auth/search endpoints. GitHub Actions passed on integration commit `2388acf` ([run](https://github.com/zixxenK/ClinicFlow/actions/runs/43320578809)); the latest run for `main` commit `5b06677` failed frontend lint ([run](https://github.com/zixxenK/ClinicFlow/actions/runs/42916502532)). A complete hosted account-to-booking flow has not been verified in this review.
 - No paying clinics, signed pilot, verified clinic directory, usage retention, or validated pricing evidence is recorded.
 
 ## Business model and market size
@@ -30,7 +32,15 @@ No pricing or revenue model has been validated. A `$50/month` figure appears in 
 
 No defensible total addressable market estimate is ready. A future estimate should identify the exact target clinic segment, count eligible locations using a cited source, establish buyer willingness and sales cycle through interviews, and model onboarding, support, infrastructure, and integration costs.
 
+## Ownership and privacy readiness
+
+The repository describes a course-team project and contains no software license or record of contributor/university IP clearance. Confirm ownership and transfer rights with every contributor and the university/course sponsor, clear the ClinicFlow name, and review third-party software and directory-data terms before offering or transferring equity.
+
+ClinicFlow stores appointment and booking-profile data. Before real clinic use, obtain qualified Ontario privacy/legal review, including the applicability of PHIPA and PIPEDA, and establish a privacy impact assessment, data-processing terms, retention/deletion rules, breach response, and data-location requirements. The prototype has not completed that review.
+
 ## Next evidence to collect
+
+Run the [customer discovery plan](customer-discovery-plan.md). It is an interview protocol only; no customer research has been completed by creating it.
 
 1. Interview clinic owners, administrators, and front-desk staff about current scheduling tools, duplicated work, cancellation/no-show handling, data migration, and required integrations.
 2. Interview patients about how they find clinics and whether appointment availability changes their choice.

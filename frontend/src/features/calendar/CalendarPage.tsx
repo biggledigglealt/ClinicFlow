@@ -94,6 +94,15 @@ function formatClock(value: string, timeZone: string, language: 'en' | 'fr') {
   }).format(new Date(value))
 }
 
+function patientAppointmentConflict(slot: AppointmentSlot, appointments: PatientAppointment[]) {
+  const slotStart = new Date(slot.start_at).getTime()
+  const slotEnd = new Date(slot.end_at).getTime()
+  return appointments.find((appointment) =>
+    new Date(appointment.start_at).getTime() < slotEnd
+    && new Date(appointment.end_at).getTime() > slotStart,
+  ) ?? null
+}
+
 function dateInTimeZoneForValue(value: string, timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -160,7 +169,10 @@ export function CalendarPage({
   )
   const dates = useMemo(() => calendarDates(selectedDate, view), [selectedDate, view])
   const weekdays = useMemo(() => weekdayLabels(language), [language])
-  const selectedSlot = slots.find((slot) => `${slot.staff_id}:${slot.start_at}` === selectedSlotKey) ?? null
+  const selectedSlot = slots.find((slot) =>
+    `${slot.staff_id}:${slot.start_at}` === selectedSlotKey
+    && !patientAppointmentConflict(slot, visibleAppointments),
+  ) ?? null
   const dayAppointments = selectedClinic
     ? visibleAppointments.filter((appointment) => appointment.clinic_id === selectedClinic.id
       && dateInTimeZoneForValue(appointment.start_at, selectedClinic.time_zone) === selectedDate)
@@ -435,7 +447,7 @@ export function CalendarPage({
           <>
             {isLoadingDay && <p className="section-description" role="status">{t('Loading availability…')}</p>}
             {!isLoadingDay && dayAppointments.length === 0 && slots.length === 0 && !error && (
-              <p className="calendar-no-times">{t('No times are available on this date. Try another weekday or select a different clinic.')}</p>
+              <p className="calendar-no-times">{t('No bookable times are available to you at this clinic on this date. Try another date.')}</p>
             )}
             {(['morning', 'afternoon'] as const).map((period) => {
               const periodAppointments = dayAppointments.filter((item) => {
@@ -455,29 +467,50 @@ export function CalendarPage({
                 <section className="calendar-time-group" key={period} aria-label={t(period === 'morning' ? 'Morning' : 'Afternoon')}>
                   <h3>{t(period === 'morning' ? 'Morning' : 'Afternoon')}</h3>
                   <div className="calendar-time-list" aria-live="polite">
-                    {rows.map((row) => row.kind === 'appointment' ? (
-                      <article className="calendar-time-card is-yours" key={row.appointment.id}>
-                        <strong>{formatClock(row.appointment.start_at, selectedClinic.time_zone, language)}</strong>
-                        <span>{t('Your appointment')}</span>
-                        <div className="calendar-time-actions">
-                          <button type="button" className="text-button" disabled={busy}
-                            onClick={() => { setReschedulingId(row.appointment.id); setSelectedSlotKey(null); setMessage(t('Choose an available time to reschedule.')) }}>
-                            {t('Reschedule')}
-                          </button>
-                          <button type="button" className="text-button" disabled={busy}
-                            onClick={() => void cancelAppointment(row.appointment.id)}>{t('Cancel')}</button>
-                        </div>
-                      </article>
-                    ) : (
-                      <button type="button" key={`${row.slot.staff_id}:${row.slot.start_at}`}
-                        className={'calendar-time-card is-available'
-                          + (selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}` ? ' is-slot-selected' : '')}
-                        aria-pressed={selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}`}
-                        onClick={() => { setSelectedSlotKey(`${row.slot.staff_id}:${row.slot.start_at}`); setMessage('') }}>
-                        <strong>{formatClock(row.slot.start_at, selectedClinic.time_zone, language)}</strong>
-                        <span>{selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}` ? t('Selected') : t('Available')}</span>
-                      </button>
-                    ))}
+                    {rows.map((row) => {
+                      if (row.kind === 'appointment') {
+                        return (
+                          <article className="calendar-time-card is-yours" key={row.appointment.id}>
+                            <strong>{formatClock(row.appointment.start_at, selectedClinic.time_zone, language)}</strong>
+                            <span>{t('Your appointment')}</span>
+                            <div className="calendar-time-actions">
+                              <button type="button" className="text-button" disabled={busy}
+                                onClick={() => { setReschedulingId(row.appointment.id); setSelectedSlotKey(null); setMessage(t('Choose an available time to reschedule.')) }}>
+                                {t('Reschedule')}
+                              </button>
+                              <button type="button" className="text-button" disabled={busy}
+                                onClick={() => void cancelAppointment(row.appointment.id)}>{t('Cancel')}</button>
+                            </div>
+                          </article>
+                        )
+                      }
+
+                      const conflict = patientAppointmentConflict(row.slot, visibleAppointments)
+                      if (conflict) {
+                        return (
+                          <article className="calendar-time-card is-conflict" key={`${row.slot.staff_id}:${row.slot.start_at}`}>
+                            <strong>{formatClock(row.slot.start_at, selectedClinic.time_zone, language)}</strong>
+                            <span>{t('Conflicts with your appointment')}</span>
+                            <small>
+                              {conflict.clinic?.name ?? t('Another clinic')}
+                              {' · '}
+                              {formatClock(conflict.start_at, conflict.clinic?.time_zone ?? selectedClinic.time_zone, language)}
+                            </small>
+                          </article>
+                        )
+                      }
+
+                      return (
+                        <button type="button" key={`${row.slot.staff_id}:${row.slot.start_at}`}
+                          className={'calendar-time-card is-available'
+                            + (selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}` ? ' is-slot-selected' : '')}
+                          aria-pressed={selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}`}
+                          onClick={() => { setSelectedSlotKey(`${row.slot.staff_id}:${row.slot.start_at}`); setMessage('') }}>
+                          <strong>{formatClock(row.slot.start_at, selectedClinic.time_zone, language)}</strong>
+                          <span>{selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}` ? t('Selected') : t('Available')}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </section>
               )

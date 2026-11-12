@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - feature/supabase-foundation
+      - 'feature/**'
 
 permissions:
   contents: read

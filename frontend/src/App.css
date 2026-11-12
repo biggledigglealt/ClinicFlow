@@ -552,8 +552,8 @@
   align-items: center;
   padding: 22px 26px;
   margin-bottom: 20px;
-  border-left: 4px solid var(--color-brand);
-  background: #f5f8ff;
+  border-left: 4px solid #285fe8;
+  background: #fff;
 }
 
 .hero-panel h2 {
@@ -562,8 +562,8 @@
 }
 
 .status-pill {
-  border: 1px solid #d5e2f5;
-  background: #fff;
+  border: 1px solid #d7e3f7;
+  background: #eef4ff;
   color: #1d4ed8;
   padding: 0.75rem 1rem;
   border-radius: 999px;
@@ -823,14 +823,6 @@
   font-weight: 600;
 }
 
-.clinic-search-result-field {
-  display: grid;
-  align-content: start;
-  gap: 7px;
-  color: #334155;
-  font-weight: 600;
-}
-
 .field-hint {
   color: #64748b;
   font-size: 0.85rem;
@@ -841,15 +833,16 @@
 .clinic-search-meta {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 8px;
   height: 54px;
   min-height: 54px;
   padding: 0 1rem;
   border: 1px solid #d8e4f0;
   border-radius: 12px;
-  background: #f8faff;
+  background: #f5f8fe;
   color: #334155;
+  font-weight: 600;
 }
 
 .clinic-search-meta strong {
@@ -1731,6 +1724,21 @@ button.calendar-time-card:focus-visible {
 
 .calendar-time-card.is-yours > span {
   color: #18734b;
+}
+
+.calendar-time-card.is-conflict {
+  border-color: #e7c98f;
+  background: #fff8e9;
+}
+
+.calendar-time-card.is-conflict > span {
+  color: #8a5a00;
+}
+
+.calendar-time-card.is-conflict > small {
+  grid-column: 1 / -1;
+  color: #667085;
+  font-size: 0.68rem;
 }
 
 .calendar-time-card.is-slot-selected {
