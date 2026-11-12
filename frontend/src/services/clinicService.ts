@@ -17,6 +17,8 @@ export interface Clinic {
   source_name: string | null
   source_url: string | null
   source_checked_on: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
 export interface ClinicSearchOptions {
@@ -74,7 +76,7 @@ export async function searchClinics(options: ClinicSearchOptions) {
 
   const { data: provenance, error: provenanceError } = await supabase
     .from('clinics')
-    .select('id, listing_status, source_name, source_url, source_checked_on')
+    .select('id, listing_status, source_name, source_url, source_checked_on, latitude, longitude')
     .in('id', searchResults.map((clinic) => clinic.id))
   if (provenanceError) throw provenanceError
   const provenanceById = new Map((provenance ?? []).map((item) => [item.id, item]))
@@ -89,6 +91,8 @@ export async function searchClinics(options: ClinicSearchOptions) {
       source_name: source.source_name,
       source_url: source.source_url,
       source_checked_on: source.source_checked_on,
+      latitude: source.latitude,
+      longitude: source.longitude,
     }]
   })
 }

@@ -8,6 +8,7 @@ import {
 } from '../../services/clinicService'
 
 type SortOption = 'nearest' | 'earliest' | 'alphabetical'
+type ClinicView = 'list' | 'map'
 
 interface ClinicFinderProps {
   selectedClinicId: string | null
@@ -53,6 +54,32 @@ function sortClinics(clinics: Clinic[], sortBy: SortOption) {
   return sorted
 }
 
+function clinicMapLinks(clinics: Clinic[], focusedClinic: Clinic | undefined) {
+  if (focusedClinic?.latitude == null || focusedClinic.longitude == null) return null
+
+  const mappedClinics = clinics.filter((clinic) => clinic.latitude != null && clinic.longitude != null)
+  if (mappedClinics.length === 0) return null
+
+  const latitudes = mappedClinics.map((clinic) => clinic.latitude as number)
+  const longitudes = mappedClinics.map((clinic) => clinic.longitude as number)
+  const latitudePadding = Math.max(0.012, (Math.max(...latitudes) - Math.min(...latitudes)) * 0.25)
+  const longitudePadding = Math.max(0.015, (Math.max(...longitudes) - Math.min(...longitudes)) * 0.25)
+  const bbox = [
+    Math.min(...longitudes) - longitudePadding,
+    Math.min(...latitudes) - latitudePadding,
+    Math.max(...longitudes) + longitudePadding,
+    Math.max(...latitudes) + latitudePadding,
+  ].map((value) => value.toFixed(5)).join(',')
+  const marker = `${focusedClinic.latitude},${focusedClinic.longitude}`
+  const embedded = new URLSearchParams({ bbox, layer: 'mapnik', marker }).toString()
+  const external = `https://www.openstreetmap.org/?mlat=${focusedClinic.latitude}&mlon=${focusedClinic.longitude}#map=14/${focusedClinic.latitude}/${focusedClinic.longitude}`
+
+  return {
+    embedUrl: `https://www.openstreetmap.org/export/embed.html?${embedded}`,
+    externalUrl: external,
+  }
+}
+
 export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderProps) {
   const t = useTranslate()
   const language = useLanguage()
@@ -64,9 +91,12 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   const [acceptingNewPatients, setAcceptingNewPatients] = useState(false)
   const [onlyWithAvailability, setOnlyWithAvailability] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('nearest')
+  const [viewMode, setViewMode] = useState<ClinicView>('list')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const sortedClinics = useMemo(() => sortClinics(clinics, sortBy), [clinics, sortBy])
+  const focusedMapClinic = sortedClinics.find((clinic) => clinic.id === selectedClinicId) ?? sortedClinics[0]
+  const mapLinks = clinicMapLinks(sortedClinics, focusedMapClinic)
 
   function resetFilters() {
     setLocation(defaultSearch.location)
@@ -241,7 +271,43 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
       {isLoading ? (
         <p role="status">{t('Finding nearby clinics\u2026')}</p>
       ) : sortedClinics.length > 0 ? (
-        <div className="clinic-list" aria-live="polite">
+        <>
+          <div className="clinic-results-toolbar">
+            <strong>{sortedClinics.length} {t('clinics found')}</strong>
+            <div className="clinic-view-toggle" role="group" aria-label={t('Clinic results view')}>
+              <button type="button" className={viewMode === 'list' ? 'view-toggle active' : 'view-toggle'}
+                aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')}>{t('List')}</button>
+              <button type="button" className={viewMode === 'map' ? 'view-toggle active' : 'view-toggle'}
+                aria-pressed={viewMode === 'map'} onClick={() => setViewMode('map')}>{t('Map')}</button>
+            </div>
+          </div>
+
+          {viewMode === 'map' && mapLinks && focusedMapClinic && (
+            <section className="clinic-map-panel" aria-label={t('Clinic map view')}>
+              <div className="clinic-map-heading">
+                <div>
+                  <strong>{focusedMapClinic.name}</strong>
+                  <span>{t('Map pin shows the selected clinic. Choose another clinic below to move it.')}</span>
+                </div>
+                <a href={mapLinks.externalUrl} target="_blank" rel="noreferrer">{t('Open map')}</a>
+              </div>
+              <iframe
+                title={`${t('Map showing')} ${focusedMapClinic.name}`}
+                src={mapLinks.embedUrl}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                allowFullScreen
+              />
+              <p className="clinic-map-attribution">
+                {t('Map data ©')}{' '}<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>
+              </p>
+            </section>
+          )}
+          {viewMode === 'map' && !mapLinks && (
+            <p className="clinic-map-unavailable">{t('A map location is not available for these clinics yet.')}</p>
+          )}
+
+          <div className="clinic-list" aria-live="polite">
           {sortedClinics.map((clinic) => {
             const isSelected = clinic.id === selectedClinicId
             const locationLabel = [clinic.city, clinic.province].filter(Boolean).join(', ')
@@ -294,6 +360,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
             )
           })}
         </div>
+        </>
       ) : (
         <p>{t('No clinics match these search options. Try a larger distance or remove a filter.')}</p>
       )}
