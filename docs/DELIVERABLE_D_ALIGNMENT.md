@@ -1,6 +1,6 @@
 # Deliverable D alignment and prototype status
 
-This status note describes the current local prototype. ClinicFlow is an administrative clinic-finding and appointment system; it does not store clinical notes or provide clinical decisions. Use synthetic data only. The new migrations have been applied only to local Supabase and have not been pushed to the hosted project.
+This status note describes the locally implemented prototype and its local validation. ClinicFlow is an administrative clinic-finding and appointment system; it does not store clinical notes or provide clinical decisions. Use synthetic data only. A later read-only check of hosted Auth and clinic search is recorded in [Investor demo readiness](INVESTOR_READINESS.md); that check did not establish the hosted migration history or authenticated appointment flows.
 
 ## Detailed-design criteria and implementation
 
@@ -39,4 +39,4 @@ This status note describes the current local prototype. ClinicFlow is an adminis
 
 ## Database environment boundary
 
-All migrations and verification in this status note are local. Do not push migrations or configure hosted credentials as part of local prototype validation; review the linked project's schema, Auth settings, and deployment plan with the project owner first.
+The migration application and pgTAP verification reported in this status note were local. The separate hosted check was read-only. Confirm the linked project's migration history, Auth settings, and deployment plan with its owner before applying hosted migrations or using real information.

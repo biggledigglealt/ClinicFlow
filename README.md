@@ -6,11 +6,11 @@ ClinicFlow is a course prototype for clinic search, appointment scheduling, and 
 
 The current integration branch is `feature/supabase-foundation`. It contains the Supabase-backed application and is ahead of `main`. Team feature work should branch from this integration branch, go through pull requests back into it, and be merged to `main` after integration checks pass.
 
-A Vercel site is available at [clinic-flow-sigma-snowy.vercel.app](HOSTED_PREVIEW_URL_REMOVED)
+The public [Production site](HOSTED_PREVIEW_URL_REMOVED) and [integration preview](https://clinic-flow-git-feature-supabase-foundation-equillibrium1.vercel.app/) are reachable. As checked on 2026-11-12, Production still serves the older `main` build; use the integration preview to show the current finder and calendar.
 
-The validated database environment is local Supabase. Hosted Supabase configuration and migration history have not been verified. Review the hosted project with its owner before deploying migrations or configuring production access.
+Both deployments currently use the same hosted Supabase project. Its public Auth health endpoint and clinic-search RPC respond, but live sign-up and booking have not been rechecked, and email verification is required. The hosted migration history and private appointment flows remain unverified. Preview actions can write to the same backend as Production, so use synthetic demo accounts and records only.
 
-See [Investor demo readiness](docs/INVESTOR_READINESS.md) for a dated summary of what the prototype demonstrates and what still blocks a commercial launch.
+See [Investor demo readiness](docs/INVESTOR_READINESS.md) and the [evidence-based investor brief](docs/INVESTOR_BRIEF.md) for current proof and remaining commercial gaps.
 
 ## What the prototype supports
 

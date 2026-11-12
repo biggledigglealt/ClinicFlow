@@ -5,12 +5,14 @@ on:
   push:
     branches:
       - main
+      - feature/supabase-foundation
 
 permissions:
   contents: read
 
 jobs:
   validate:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
