@@ -52,7 +52,7 @@ Local signup is immediate without email confirmation. Password recovery emails a
 
 Use `db:migrate` to apply pending migrations without resetting local accounts. `db:reset` removes locally created Auth users and database records before applying migrations and synthetic clinic, provider, and schedule records from `supabase/seed.sql`; run it only when you intentionally want a clean local database. Use `db:test` to rerun database checks without resetting local accounts.
 
-Appointment email jobs can be processed locally with `npm.cmd run notify:local`; the worker targets Mailpit only and is not scheduled automatically. Hosted Supabase needs the correct web redirect URLs, email-confirmation settings, and a selected SMTP provider before external delivery. For native Capacitor verification or password recovery, add `ca.uottawa.clinicflow://auth-callback` to the hosted Auth redirect allowlist. Native builds and email callback handoff have not been verified.
+While `npm run dev` is running, a local worker checks appointment email jobs every 10 seconds and captures due messages in Mailpit. Run `npm.cmd run notify:local` on Windows or `npm run notify:local` on macOS/Linux to process the queue once. Both paths target local Mailpit only. Hosted Supabase needs a provider and a scheduled server-side worker before external delivery. For native Capacitor verification or password recovery, add `ca.uottawa.clinicflow://auth-callback` to the hosted Auth redirect allowlist. Native builds and email callback handoff have not been verified.
 
 ## 5. Keep logs useful and private
 

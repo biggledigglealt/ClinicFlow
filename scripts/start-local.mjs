@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { spawn } from 'node:child_process'
 import { runProcess } from './process-utils.mjs'
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url))
@@ -7,6 +8,7 @@ const supabaseCli = fileURLToPath(new URL('../node_modules/supabase/dist/supabas
 const supabaseRunner = fileURLToPath(new URL('./supabase-local.mjs', import.meta.url))
 const seedScript = fileURLToPath(new URL('./seed-local.mjs', import.meta.url))
 const viteCli = fileURLToPath(new URL('../frontend/node_modules/vite/bin/vite.js', import.meta.url))
+const localNotificationWatcher = fileURLToPath(new URL('./watch-local-notifications.mjs', import.meta.url))
 
 async function run(command, args, message, options = {}) {
   console.log(message)
@@ -70,10 +72,34 @@ async function main() {
   console.log('ClinicFlow is ready. Open the forwarded port 5173 in Codespaces, or http://127.0.0.1:5173 locally.')
   console.log('Local signup is immediate. Use synthetic data only.')
 
-  await run(process.execPath, [viteCli, '--host', '0.0.0.0', '--port', '5173', '--strictPort'], 'Starting the frontend...', {
-    cwd: frontendRoot,
-    env: { ...process.env, VITE_SUPABASE_PUBLISHABLE_KEY: publishableKey },
+  const notificationWorker = spawn(process.execPath, [localNotificationWatcher], {
+    cwd: projectRoot,
+    env: supabaseEnv,
+    stdio: 'inherit',
+    windowsHide: true,
   })
+  let stoppingNotificationWorker = false
+  notificationWorker.on('error', () => {
+    console.error('The local email worker could not start; booking emails will remain queued.')
+  })
+  notificationWorker.on('exit', (code) => {
+    if (!stoppingNotificationWorker && code !== 0) {
+      console.error('The local email worker stopped unexpectedly; booking emails may remain queued.')
+    }
+  })
+
+  console.log('Due booking emails are automatically captured in local Mailpit while ClinicFlow runs.')
+  try {
+    await run(process.execPath, [viteCli, '--host', '0.0.0.0', '--port', '5173', '--strictPort'], 'Starting the frontend...', {
+      cwd: frontendRoot,
+      env: { ...process.env, VITE_SUPABASE_PUBLISHABLE_KEY: publishableKey },
+    })
+  } finally {
+    stoppingNotificationWorker = true
+    if (notificationWorker.exitCode === null && notificationWorker.signalCode === null) {
+      notificationWorker.kill('SIGTERM')
+    }
+  }
 }
 
 main().catch((error) => {

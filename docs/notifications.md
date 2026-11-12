@@ -20,6 +20,6 @@ Pricing and regional terms change; confirm them directly during the deployment r
 
 ## Local test
 
-Local Supabase exposes Mailpit at `http://127.0.0.1:54324` and SMTP at `127.0.0.1:54325`. The `npm run notify:local` worker claims due rows from the local Supabase Docker database and sends them only to local Mailpit. It has no production-provider option and must not be pointed at an external SMTP host.
+Local Supabase exposes Mailpit at `http://127.0.0.1:54324` and SMTP at `127.0.0.1:54325`. While `npm run dev` runs, a local worker checks the outbox every 10 seconds, claims due rows from the local Supabase Docker database, and sends them only to local Mailpit. The `npm run notify:local` command processes due rows once. Neither path has a production-provider option or may be pointed at an external SMTP host.
 
 The hosted delivery worker is not configured. Before enabling a provider, add a server-side worker with secret-managed credentials, keep delivery disabled by default, add a test recipient allow-list, verify retry/idempotency behavior, and test suppression and bounce handling. SMS and push remain later work.

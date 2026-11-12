@@ -77,13 +77,13 @@ npm run db:stop
 
 Use `npm run db:reset` only when you intend to delete local Auth users and database records and reload the synthetic seed data. Do not reset a database containing work you need to keep.
 
-To process due email jobs locally, run:
+While you run the app with npm run dev, a local worker checks the email queue every 10 seconds and sends due test messages to Mailpit. To process the queue once when the app is not running, use:
 
 ```sh
 npm run notify:local
 ```
 
-The worker sends test messages to local Mailpit only. It is not a hosted email service or an automatic production reminder worker.
+Both paths send test messages to local Mailpit only. They are not a hosted email service or a production reminder worker. Hosted email delivery still requires a provider and a scheduled server-side worker.
 
 ## Hosted deployment requirements
 
