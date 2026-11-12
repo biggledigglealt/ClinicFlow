@@ -9,7 +9,7 @@ ClinicFlow demonstrates administrative clinic search, appointment scheduling, an
 
 - The React, TypeScript, and Vite web app includes clinic search, list and map views, appointment booking, and patient and staff workflows.
 - The repository includes Supabase migrations, row-level policies, synthetic Ottawa demo data, and 66 planned pgTAP assertions. CI is configured to run frontend lint/build and local database checks on pull requests.
-- The Vercel branch URL returned HTTP 200 during this review. That confirms the page is served; it does not confirm the backend, sign-in, booking, or the latest local source changes.
+- The Vercel branch URL returned HTTP 200 during this review. After commit `fc83086`, its CSS bundle served the updated banner and search-result layout. This confirms the frontend deployment, not the backend, sign-in, or booking flow.
 - A previous local validation is recorded in [the subsystem overview](subsystem-overview.md). It covers local Supabase and synthetic fixtures, not a hosted production system.
 
 ## Readiness gaps
