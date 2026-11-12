@@ -118,7 +118,7 @@ The current integration branch is `feature/supabase-foundation`; `main` is the s
 ```sh
 git fetch origin
 git switch feature/supabase-foundation
-git pull
+git pull --ff-only origin feature/supabase-foundation
 git switch -c feature/short-task-name
 ```
 

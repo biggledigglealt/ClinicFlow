@@ -19,8 +19,8 @@ ClinicFlow is a web prototype for clinic discovery, appointment booking, and lig
 
 ## Evidence available
 
-- The repository contains a course project brief and one recorded client feedback conversation. The client asked how the proposed monthly price was researched and recommended more clinic/patient research and investigation of existing-system integrations.
-- The current hosted app has two active synthetic clinic listings. An Ottawa search within 25 km returns one demo result.
+- The repository contains a course project brief and one [recorded client feedback conversation](../Deliverables/GNG1103_Deliverable_A-D.md). The client asked how the proposed monthly price was researched and recommended more clinic/patient research and investigation of existing-system integrations.
+- The current hosted app has two active synthetic clinic listings. An Ottawa search within 25 km returns both demo results.
 - The prototype has local database tests and hosted public Auth/search endpoints. A complete hosted account-to-booking flow has not been verified in this review.
 - No paying clinics, signed pilot, verified clinic directory, usage retention, or validated pricing evidence is recorded.
 
