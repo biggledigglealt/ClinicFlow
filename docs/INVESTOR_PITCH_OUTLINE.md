@@ -32,7 +32,7 @@
 
 **Slide message:** The prototype includes clinic search, distance and service filters, appointment availability and booking, staff schedule tools, waitlist offers, and accessibility settings.
 
-**Proof:** The integration source passed its GitHub Actions run at commit `2388acf`; the local frontend production build passed after the current visual and conflict-label changes and emitted a large-chunk advisory. A new database migration still needs to run through CI and staging.
+**Proof:** Integration commit `8d1657c` passed GitHub Actions, including frontend lint/build, migrations, and local database access checks. The build emits a large-chunk advisory. The hosted Supabase project still needs a controlled migration and end-to-end booking verification; Preview and Production currently share that backend.
 
 **Limitation:** The hosted directory currently returns two synthetic Ottawa listings, and the repository seed gives both the same weekday clinic/provider hours. Matching demo slots are a seed-data artifact, not proof that real clinics share schedules or availability. This is not a verified clinic directory.
 
