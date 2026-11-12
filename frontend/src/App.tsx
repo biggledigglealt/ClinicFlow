@@ -14,7 +14,6 @@ import { NotificationCenter } from './components/NotificationCenter'
 import { StaffOperationsPanel } from './components/StaffOperationsPanel'
 import { HelpCenter } from './components/HelpCenter'
 import { PlatformAdminPanel } from './components/PlatformAdminPanel'
-import { AppointmentBookingPanel } from './features/appointments/AppointmentBookingPanel'
 import { CalendarPage } from './features/calendar/CalendarPage'
 import { ClinicFinder } from './features/clinics/ClinicFinder'
 import type { Clinic } from './services/clinicService'
@@ -464,15 +463,17 @@ function App() {
                   <div><p className="eyebrow">{t('Patient appointment flow')}</p><h2>{t('Find a clinic and book an appointment')}</h2><p className="hero-description">{t('Search local clinics, compare availability, and manage upcoming bookings.')}</p></div>
                   <span className="status-pill">{t('Current prototype')}</span>
                 </section>
-                <div className="content-grid" id="clinic-search">
+                <div className="clinic-booking-flow" id="clinic-search">
                   <ClinicFinder selectedClinicId={selectedClinic?.id ?? null} onSelectClinic={setSelectedClinic} />
-                  <AppointmentBookingPanel
-                    key={(user?.id ?? 'guest') + ':' + (selectedClinic?.id ?? 'no-clinic')}
-                    clinic={selectedClinic} userId={user?.id ?? null} hasPatientProfile={hasPatientProfile}
-                    textToSpeech={accessibilityPreferences.text_to_speech} language={accessibilityPreferences.language}
+                  <CalendarPage
+                    key={user?.id ?? 'guest'}
+                    preferredClinicId={selectedClinic?.id ?? null}
+                    userId={user?.id ?? null}
+                    hasPatientProfile={hasPatientProfile}
                     refreshToken={appointmentsRefreshToken}
                     onLoginRequest={openLogin}
                     onOpenProfile={() => navigateTo('profile')}
+                    onClinicChange={setSelectedClinic}
                   />
                 </div>
                 {user && (
@@ -490,12 +491,14 @@ function App() {
 
             {activeSection === 'calendar' && (
               <CalendarPage
+                key={user?.id ?? 'guest'}
                 preferredClinicId={selectedClinic?.id ?? null}
                 userId={user?.id ?? null}
                 hasPatientProfile={hasPatientProfile}
+                refreshToken={appointmentsRefreshToken}
                 onLoginRequest={openLogin}
                 onOpenProfile={() => navigateTo('profile')}
-                onAppointmentsChanged={() => setAppointmentsRefreshToken((token) => token + 1)}
+                onClinicChange={setSelectedClinic}
               />
             )}
 

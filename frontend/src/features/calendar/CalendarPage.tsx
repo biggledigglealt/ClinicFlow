@@ -8,7 +8,7 @@ import {
   type AppointmentSlot,
   type PatientAppointment,
 } from '../../services/appointmentService'
-import { listCalendarClinics, type CalendarClinic } from '../../services/clinicService'
+import { listCalendarClinics, type CalendarClinic, type Clinic } from '../../services/clinicService'
 import { useLanguage, useTranslate } from '../../lib/i18n'
 
 type CalendarView = 'month' | 'week' | 'day'
@@ -17,9 +17,10 @@ interface CalendarPageProps {
   preferredClinicId: string | null
   userId: string | null
   hasPatientProfile: boolean
+  refreshToken: number
   onLoginRequest: () => void
   onOpenProfile: () => void
-  onAppointmentsChanged: () => void
+  onClinicChange: (clinic: Clinic) => void
 }
 
 function dateInTimeZone(timeZone: string) {
@@ -128,9 +129,10 @@ export function CalendarPage({
   preferredClinicId,
   userId,
   hasPatientProfile,
+  refreshToken,
   onLoginRequest,
   onOpenProfile,
-  onAppointmentsChanged,
+  onClinicChange,
 }: CalendarPageProps) {
   const t = useTranslate()
   const language = useLanguage()
@@ -148,12 +150,19 @@ export function CalendarPage({
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
-  const selectedClinic = clinics.find((clinic) => clinic.id === selectedClinicId) ?? null
+  const resolvedClinicId = preferredClinicId && clinics.some((clinic) => clinic.id === preferredClinicId)
+    ? preferredClinicId
+    : selectedClinicId
+  const selectedClinic = clinics.find((clinic) => clinic.id === resolvedClinicId) ?? null
+  const visibleAppointments = useMemo(
+    () => userId && hasPatientProfile ? appointments : [],
+    [userId, hasPatientProfile, appointments],
+  )
   const dates = useMemo(() => calendarDates(selectedDate, view), [selectedDate, view])
   const weekdays = useMemo(() => weekdayLabels(language), [language])
   const selectedSlot = slots.find((slot) => `${slot.staff_id}:${slot.start_at}` === selectedSlotKey) ?? null
   const dayAppointments = selectedClinic
-    ? appointments.filter((appointment) => appointment.clinic_id === selectedClinic.id
+    ? visibleAppointments.filter((appointment) => appointment.clinic_id === selectedClinic.id
       && dateInTimeZoneForValue(appointment.start_at, selectedClinic.time_zone) === selectedDate)
     : []
   const calendarMonth = utcDate(selectedDate).getUTCMonth()
@@ -167,7 +176,6 @@ export function CalendarPage({
         setClinics(items)
         setSelectedClinicId((current) => {
           if (current && items.some((clinic) => clinic.id === current)) return current
-          if (preferredClinicId && items.some((clinic) => clinic.id === preferredClinicId)) return preferredClinicId
           return items[0]?.id ?? ''
         })
       })
@@ -177,13 +185,10 @@ export function CalendarPage({
       .finally(() => { if (active) setIsLoadingClinics(false) })
 
     return () => { active = false }
-  }, [preferredClinicId])
+  }, [])
 
   useEffect(() => {
-    if (!selectedClinic || !userId || !hasPatientProfile) {
-      setAppointments([])
-      return
-    }
+    if (!selectedClinic || !userId || !hasPatientProfile) return
 
     let active = true
     listMyUpcomingAppointments()
@@ -200,9 +205,10 @@ export function CalendarPage({
       active = false
       window.clearInterval(refreshTimer)
     }
-  }, [selectedClinic?.id, userId, hasPatientProfile])
+  }, [selectedClinic, userId, hasPatientProfile, refreshToken])
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- Discard the previous day before fetching availability for this clinic and date.
     setSlots([])
     setSelectedSlotKey(null)
     setError('')
@@ -226,7 +232,7 @@ export function CalendarPage({
       active = false
       window.clearInterval(refreshTimer)
     }
-  }, [selectedClinic?.id, selectedDate, userId, hasPatientProfile])
+  }, [selectedClinic, selectedDate, userId, hasPatientProfile])
 
   function changeMonth(delta: number) {
     const date = utcDate(selectedDate)
@@ -247,7 +253,6 @@ export function CalendarPage({
     ])
     setAppointments(updatedAppointments)
     setSlots(updatedSlots)
-    onAppointmentsChanged()
   }
 
   async function confirmSelection() {
@@ -290,10 +295,13 @@ export function CalendarPage({
   }
 
   function goToMyAppointments() {
-    const nextAppointment = appointments[0]
+    const nextAppointment = visibleAppointments[0]
     if (!nextAppointment) return
     const matchingClinic = clinics.find((clinic) => clinic.id === nextAppointment.clinic_id)
-    if (matchingClinic) setSelectedClinicId(matchingClinic.id)
+    if (matchingClinic) {
+      setSelectedClinicId(matchingClinic.id)
+      onClinicChange(matchingClinic)
+    }
     const timeZone = matchingClinic?.time_zone ?? nextAppointment.clinic?.time_zone ?? 'America/Toronto'
     setSelectedDate(dateInTimeZoneForValue(nextAppointment.start_at, timeZone))
     setView('day')
@@ -301,13 +309,13 @@ export function CalendarPage({
 
   const appointmentDays = useMemo(() => {
     const days = new Map<string, PatientAppointment[]>()
-    for (const appointment of appointments) {
+    for (const appointment of visibleAppointments) {
       const timeZone = appointment.clinic?.time_zone ?? 'America/Toronto'
       const key = dateInTimeZoneForValue(appointment.start_at, timeZone)
       days.set(key, [...(days.get(key) ?? []), appointment])
     }
     return days
-  }, [appointments])
+  }, [visibleAppointments])
 
   return (
     <section className="calendar-workspace" aria-label={t('Calendar')}>
@@ -383,7 +391,7 @@ export function CalendarPage({
 
       <aside className="calendar-detail-panel" aria-labelledby="calendar-day-title">
         <div className="calendar-detail-heading">
-          <button type="button" className="calendar-my-appointments" onClick={goToMyAppointments} disabled={!appointments.length}>
+          <button type="button" className="calendar-my-appointments" onClick={goToMyAppointments} disabled={!visibleAppointments.length}>
             <span aria-hidden="true">‹</span> {t('My appointments')}
           </button>
           <h2 id="calendar-day-title">{formatLongDate(selectedDate, language)}</h2>
@@ -391,9 +399,16 @@ export function CalendarPage({
         </div>
 
         <label className="calendar-clinic-label" htmlFor="calendar-clinic">{t('Clinic')}</label>
-        <select id="calendar-clinic" className="calendar-clinic-select" value={selectedClinicId}
+        <select id="calendar-clinic" className="calendar-clinic-select" value={resolvedClinicId}
           disabled={isLoadingClinics || clinics.length === 0}
-          onChange={(event) => { setSelectedClinicId(event.target.value); setSelectedSlotKey(null); setReschedulingId(null); setMessage('') }}>
+          onChange={(event) => {
+            const clinic = clinics.find((item) => item.id === event.target.value)
+            setSelectedClinicId(event.target.value)
+            if (clinic) onClinicChange(clinic)
+            setSelectedSlotKey(null)
+            setReschedulingId(null)
+            setMessage('')
+          }}>
           {clinics.map((clinic) => <option key={clinic.id} value={clinic.id}>{clinic.name}</option>)}
         </select>
 

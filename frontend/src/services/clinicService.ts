@@ -29,22 +29,22 @@ export interface ClinicSearchOptions {
   onlyWithAvailability: boolean
 }
 
-export interface CalendarClinic {
-  id: string
-  name: string
-  time_zone: string
-}
+export type CalendarClinic = Clinic
 
 export async function listCalendarClinics() {
   const { data, error } = await supabase
     .from('clinics')
-    .select('id, name, time_zone')
+    .select('id, name, address, city, province, phone, description, time_zone, services, accepting_new_patients, listing_status, source_name, source_url, source_checked_on, latitude, longitude')
     .eq('is_active', true)
     .in('listing_status', ['demo', 'verified'])
     .order('name')
 
   if (error) throw error
-  return (data ?? []) as CalendarClinic[]
+  return ((data ?? []) as Omit<CalendarClinic, 'distance_km' | 'next_available_at'>[]).map((clinic) => ({
+    ...clinic,
+    distance_km: 0,
+    next_available_at: null,
+  }))
 }
 
 export async function searchClinics(options: ClinicSearchOptions) {

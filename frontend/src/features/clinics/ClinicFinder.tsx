@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLanguage, useTranslate } from '../../lib/i18n'
 import {
   listClinicServiceOptions,
@@ -9,6 +9,10 @@ import {
 
 type SortOption = 'nearest' | 'earliest' | 'alphabetical'
 type ClinicView = 'list' | 'map'
+
+const ClinicLocationsMap = lazy(() => import('./ClinicLocationsMap').then((module) => ({
+  default: module.ClinicLocationsMap,
+})))
 
 interface ClinicFinderProps {
   selectedClinicId: string | null
@@ -54,30 +58,10 @@ function sortClinics(clinics: Clinic[], sortBy: SortOption) {
   return sorted
 }
 
-function clinicMapLinks(clinics: Clinic[], focusedClinic: Clinic | undefined) {
+function clinicMapUrl(focusedClinic: Clinic | undefined) {
   if (focusedClinic?.latitude == null || focusedClinic.longitude == null) return null
 
-  const mappedClinics = clinics.filter((clinic) => clinic.latitude != null && clinic.longitude != null)
-  if (mappedClinics.length === 0) return null
-
-  const latitudes = mappedClinics.map((clinic) => clinic.latitude as number)
-  const longitudes = mappedClinics.map((clinic) => clinic.longitude as number)
-  const latitudePadding = Math.max(0.012, (Math.max(...latitudes) - Math.min(...latitudes)) * 0.25)
-  const longitudePadding = Math.max(0.015, (Math.max(...longitudes) - Math.min(...longitudes)) * 0.25)
-  const bbox = [
-    Math.min(...longitudes) - longitudePadding,
-    Math.min(...latitudes) - latitudePadding,
-    Math.max(...longitudes) + longitudePadding,
-    Math.max(...latitudes) + latitudePadding,
-  ].map((value) => value.toFixed(5)).join(',')
-  const marker = `${focusedClinic.latitude},${focusedClinic.longitude}`
-  const embedded = new URLSearchParams({ bbox, layer: 'mapnik', marker }).toString()
-  const external = `https://www.openstreetmap.org/?mlat=${focusedClinic.latitude}&mlon=${focusedClinic.longitude}#map=14/${focusedClinic.latitude}/${focusedClinic.longitude}`
-
-  return {
-    embedUrl: `https://www.openstreetmap.org/export/embed.html?${embedded}`,
-    externalUrl: external,
-  }
+  return `https://www.openstreetmap.org/?mlat=${focusedClinic.latitude}&mlon=${focusedClinic.longitude}#map=14/${focusedClinic.latitude}/${focusedClinic.longitude}`
 }
 
 export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderProps) {
@@ -96,7 +80,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   const [error, setError] = useState('')
   const sortedClinics = useMemo(() => sortClinics(clinics, sortBy), [clinics, sortBy])
   const focusedMapClinic = sortedClinics.find((clinic) => clinic.id === selectedClinicId) ?? sortedClinics[0]
-  const mapLinks = clinicMapLinks(sortedClinics, focusedMapClinic)
+  const mapUrl = clinicMapUrl(focusedMapClinic)
 
   function resetFilters() {
     setLocation(defaultSearch.location)
@@ -282,28 +266,21 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
             </div>
           </div>
 
-          {viewMode === 'map' && mapLinks && focusedMapClinic && (
+          {viewMode === 'map' && mapUrl && focusedMapClinic && (
             <section className="clinic-map-panel" aria-label={t('Clinic map view')}>
               <div className="clinic-map-heading">
                 <div>
-                  <strong>{focusedMapClinic.name}</strong>
-                  <span>{t('Map pin shows the selected clinic. Choose another clinic below to move it.')}</span>
+                  <strong>{t('All search results are shown on the map.')}</strong>
+                  <span>{t('Select a pin or clinic below to choose a clinic for booking.')}</span>
                 </div>
-                <a href={mapLinks.externalUrl} target="_blank" rel="noreferrer">{t('Open map')}</a>
+                <a href={mapUrl} target="_blank" rel="noreferrer">{t('Open map')}</a>
               </div>
-              <iframe
-                title={`${t('Map showing')} ${focusedMapClinic.name}`}
-                src={mapLinks.embedUrl}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                allowFullScreen
-              />
-              <p className="clinic-map-attribution">
-                {t('Map data ©')}{' '}<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>
-              </p>
+              <Suspense fallback={<p className="clinic-map-unavailable" role="status">{t('Loading map…')}</p>}>
+                <ClinicLocationsMap clinics={sortedClinics} selectedClinicId={selectedClinicId} onSelectClinic={onSelectClinic} />
+              </Suspense>
             </section>
           )}
-          {viewMode === 'map' && !mapLinks && (
+          {viewMode === 'map' && !mapUrl && (
             <p className="clinic-map-unavailable">{t('A map location is not available for these clinics yet.')}</p>
           )}
 

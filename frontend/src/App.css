@@ -81,7 +81,7 @@
   place-items: center;
   border-radius: 13px;
   color: #fff;
-  background: linear-gradient(135deg, #8b5cf6, #5b21b6);
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   font-size: 1.2rem;
   font-weight: 800;
 }
@@ -341,7 +341,7 @@
 .clinic-search button {
   border: none;
   border-radius: 999px;
-  background: linear-gradient(135deg, #8b5cf6, #5b21b6);
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: white;
   font-weight: 700;
   cursor: pointer;
@@ -585,9 +585,8 @@
   color: #475569;
 }
 
-.content-grid {
+.clinic-booking-flow {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
   gap: 20px;
 }
 
@@ -838,12 +837,12 @@
   padding: 0.85rem 1rem;
   border: 1px solid #d8e4f0;
   border-radius: 12px;
-  background: #f8f5ff;
+  background: #f5f8ff;
   color: #334155;
 }
 
 .clinic-search-meta strong {
-  color: #5b21b6;
+  color: #1d4ed8;
   font-size: 1.15rem;
 }
 
@@ -980,8 +979,7 @@
   font-size: 0.88rem;
 }
 
-.clinic-map-heading span,
-.clinic-map-attribution {
+.clinic-map-heading span {
   color: #64748b;
   font-size: 0.72rem;
 }
@@ -993,23 +991,57 @@
   font-weight: 700;
 }
 
-.clinic-map-panel iframe {
-  display: block;
+.clinic-map-canvas {
   width: 100%;
-  height: 280px;
-  border: 0;
+  height: 320px;
   background: #e7eef7;
 }
 
-.clinic-map-attribution {
-  margin: 0;
-  padding: 5px 10px;
-  background: #fff;
-  text-align: right;
+.clinic-map-icon,
+.clinic-map-icon.leaflet-div-icon {
+  border: 0;
+  background: transparent;
 }
 
-.clinic-map-attribution a {
-  color: #475569;
+.clinic-map-pin {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  transform: rotate(-45deg);
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.3);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.clinic-map-pin > span {
+  transform: rotate(45deg);
+}
+
+.clinic-map-pin.is-selected {
+  width: 40px;
+  height: 40px;
+  border-color: #dbeafe;
+  background: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.45);
+}
+
+.clinic-map-panel .leaflet-container {
+  color: #334155;
+  font: inherit;
+  z-index: 0;
+}
+
+.clinic-map-panel .leaflet-control-zoom a {
+  color: #1d4ed8;
+}
+
+.clinic-map-panel .leaflet-control-attribution {
+  font-size: 0.65rem;
 }
 
 .clinic-map-unavailable {
@@ -1047,8 +1079,8 @@
 }
 
 .clinic-card.selected {
-  border-color: #c4b5fd;
-  background: #f5f3ff;
+  border-color: #a9c5ff;
+  background: #eff5ff;
 }
 
 .clinic-card h4,
@@ -1081,8 +1113,8 @@
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  background: #f3e8ff;
-  color: #5b21b6;
+  background: #eaf1ff;
+  color: #1d4ed8;
   font-size: 0.76rem;
   font-weight: 700;
   padding: 0.3rem 0.55rem;
@@ -1105,8 +1137,8 @@
   align-items: center;
   border-radius: 999px;
   padding: 0.25rem 0.6rem;
-  background: #f3e8ff;
-  color: #5b21b6;
+  background: #eaf1ff;
+  color: #1d4ed8;
   font-size: 0.74rem;
   font-weight: 700;
 }
@@ -1122,10 +1154,10 @@
 
 .clinic-select-button {
   flex: 0 0 auto;
-  border: 1px solid #7c3aed;
+  border: 1px solid #93b7ff;
   border-radius: 999px;
   padding: 0.7rem 1rem;
-  color: #5b21b6;
+  color: #1d4ed8;
   background: #fff;
   font-weight: 700;
   cursor: pointer;
@@ -1133,7 +1165,7 @@
 
 .clinic-select-button[aria-pressed='true'] {
   color: #fff;
-  background: #5b21b6;
+  background: #1d4ed8;
 }
 
 .availability-search {
@@ -1881,7 +1913,7 @@ button.calendar-time-card:focus-visible {
     background: #eff6ff;
   }
 
-  .content-grid,
+  .clinic-booking-flow,
   .home-secondary-grid,
   .settings-page-grid {
     grid-template-columns: 1fr;
@@ -2054,5 +2086,9 @@ button.calendar-time-card:focus-visible {
 
   .calendar-grid-day .calendar-date-cell {
     min-height: 280px;
+  }
+
+  .clinic-map-canvas {
+    height: 260px;
   }
 }
