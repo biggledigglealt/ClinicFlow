@@ -552,7 +552,8 @@
   align-items: center;
   padding: 22px 26px;
   margin-bottom: 20px;
-  background: linear-gradient(115deg, #eaf2ff 0%, #f4f8ff 68%, #edf4ff 100%);
+  border-left: 4px solid var(--color-brand);
+  background: #f5f8ff;
 }
 
 .hero-panel h2 {
@@ -561,7 +562,8 @@
 }
 
 .status-pill {
-  background: #e3edff;
+  border: 1px solid #d5e2f5;
+  background: #fff;
   color: #1d4ed8;
   padding: 0.75rem 1rem;
   border-radius: 999px;
@@ -821,6 +823,14 @@
   font-weight: 600;
 }
 
+.clinic-search-result-field {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: #334155;
+  font-weight: 600;
+}
+
 .field-hint {
   color: #64748b;
   font-size: 0.85rem;
@@ -831,14 +841,14 @@
 .clinic-search-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   height: 54px;
   min-height: 54px;
   padding: 0 1rem;
   border: 1px solid #d8e4f0;
   border-radius: 12px;
-  background: #f5f8ff;
+  background: #f8faff;
   color: #334155;
 }
 

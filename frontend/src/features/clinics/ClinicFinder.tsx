@@ -198,9 +198,11 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
             </select>
           </label>
 
-          <div className="clinic-search-meta" aria-live="polite">
+          <div className="clinic-search-result-field">
             <span>{t('Search results')}</span>
-            <strong>{sortedClinics.length}</strong>
+            <div className="clinic-search-meta" aria-live="polite">
+              <strong>{sortedClinics.length}</strong>
+            </div>
           </div>
         </div>
 

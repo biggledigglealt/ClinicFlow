@@ -10,6 +10,8 @@ A Vercel site is available at [clinic-flow-sigma-snowy.vercel.app](HOSTED_PREVIE
 
 The validated database environment is local Supabase. Hosted Supabase configuration and migration history have not been verified. Review the hosted project with its owner before deploying migrations or configuring production access.
 
+See [Investor demo readiness](docs/INVESTOR_READINESS.md) for a dated summary of what the prototype demonstrates and what still blocks a commercial launch.
+
 ## What the prototype supports
 
 The React, TypeScript, and Vite application uses Supabase Auth and PostgreSQL. The local prototype supports:
