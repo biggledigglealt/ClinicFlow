@@ -8,7 +8,6 @@ import {
 } from '../../services/clinicService'
 
 type SortOption = 'nearest' | 'earliest' | 'alphabetical'
-type ClinicView = 'list' | 'map'
 
 const ClinicLocationsMap = lazy(() => import('./ClinicLocationsMap').then((module) => ({
   default: module.ClinicLocationsMap,
@@ -75,11 +74,15 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   const [acceptingNewPatients, setAcceptingNewPatients] = useState(false)
   const [onlyWithAvailability, setOnlyWithAvailability] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('nearest')
-  const [viewMode, setViewMode] = useState<ClinicView>('list')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const sortedClinics = useMemo(() => sortClinics(clinics, sortBy), [clinics, sortBy])
-  const focusedMapClinic = sortedClinics.find((clinic) => clinic.id === selectedClinicId) ?? sortedClinics[0]
+  const selectedMapClinic = sortedClinics.find((clinic) => clinic.id === selectedClinicId)
+  const focusedMapClinic = selectedMapClinic?.latitude != null && selectedMapClinic.longitude != null
+    ? selectedMapClinic
+    : sortedClinics.find((clinic) => clinic.latitude != null && clinic.longitude != null)
+      ?? selectedMapClinic
+      ?? sortedClinics[0]
   const mapUrl = clinicMapUrl(focusedMapClinic)
 
   function resetFilters() {
@@ -255,89 +258,83 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
       {isLoading ? (
         <p role="status">{t('Finding nearby clinics\u2026')}</p>
       ) : sortedClinics.length > 0 ? (
-        <>
-          <div className="clinic-results-toolbar">
-            <strong>{sortedClinics.length} {t('clinics found')}</strong>
-            <div className="clinic-view-toggle" role="group" aria-label={t('Clinic results view')}>
-              <button type="button" className={viewMode === 'list' ? 'view-toggle active' : 'view-toggle'}
-                aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')}>{t('List')}</button>
-              <button type="button" className={viewMode === 'map' ? 'view-toggle active' : 'view-toggle'}
-                aria-pressed={viewMode === 'map'} onClick={() => setViewMode('map')}>{t('Map')}</button>
-            </div>
-          </div>
-
-          {viewMode === 'map' && mapUrl && focusedMapClinic && (
-            <section className="clinic-map-panel" aria-label={t('Clinic map view')}>
-              <div className="clinic-map-heading">
-                <div>
-                  <strong>{t('All search results are shown on the map.')}</strong>
-                  <span>{t('Select a pin or clinic below to choose a clinic for booking.')}</span>
-                </div>
-                <a href={mapUrl} target="_blank" rel="noreferrer">{t('Open map')}</a>
+        <div className="clinic-results-layout">
+          <section className="clinic-map-panel" aria-label={t('Clinic map view')}>
+            <div className="clinic-map-heading">
+              <div>
+                <strong>{t('Map of clinic results')}</strong>
+                <span>{t('Select a pin or clinic to choose a clinic for booking.')}</span>
               </div>
+              {mapUrl && <a href={mapUrl} target="_blank" rel="noreferrer">{t('Open map')}</a>}
+            </div>
+            {mapUrl && focusedMapClinic ? (
               <Suspense fallback={<p className="clinic-map-unavailable" role="status">{t('Loading map…')}</p>}>
                 <ClinicLocationsMap clinics={sortedClinics} selectedClinicId={selectedClinicId} onSelectClinic={onSelectClinic} />
               </Suspense>
-            </section>
-          )}
-          {viewMode === 'map' && !mapUrl && (
-            <p className="clinic-map-unavailable">{t('A map location is not available for these clinics yet.')}</p>
-          )}
+            ) : (
+              <p className="clinic-map-unavailable">{t('A map location is not available for these clinics yet.')}</p>
+            )}
+          </section>
 
-          <div className="clinic-list" aria-live="polite">
-          {sortedClinics.map((clinic) => {
-            const isSelected = clinic.id === selectedClinicId
-            const locationLabel = [clinic.city, clinic.province].filter(Boolean).join(', ')
-            const nextAvailabilityLabel = clinic.next_available_at
-              ? formatNextAvailable(clinic.next_available_at, clinic.time_zone, language)
-              : t('No opening found in the next 60 days')
+          <section className="clinic-results-list-panel" aria-label={t('Clinic search results')}>
+            <div className="clinic-list-header">
+              <strong>{sortedClinics.length} {t('clinics found')}</strong>
+            </div>
+            <div className="clinic-list" aria-live="polite">
+              {sortedClinics.map((clinic) => {
+                const isSelected = clinic.id === selectedClinicId
+                const locationLabel = [clinic.city, clinic.province].filter(Boolean).join(', ')
+                const nextAvailabilityLabel = clinic.next_available_at
+                  ? formatNextAvailable(clinic.next_available_at, clinic.time_zone, language)
+                  : t('No opening found in the next 60 days')
 
-            return (
-              <article className={'clinic-card' + (isSelected ? ' selected' : '')} key={clinic.id}>
-                <div className="clinic-details">
-                  <div className="clinic-card-header">
-                    <h4>{clinic.name}</h4>
-                    <span className="distance-pill">{clinic.distance_km.toFixed(1)} km</span>
-                  </div>
-                  {clinic.listing_status === 'demo' ? (
-                    <p className="clinic-listing-note"><strong>{t('Demo listing:')}</strong> {t('synthetic prototype data, not a real clinic.')}</p>
-                  ) : (
-                    <p className="clinic-listing-note">
-                      {t('Verified from ')}{clinic.source_name}{t(' on ')}{clinic.source_checked_on}
-                      {clinic.source_url && <> {' · '}<a href={clinic.source_url} target="_blank" rel="noreferrer">{t('View source')}</a></>}
-                    </p>
-                  )}
-                  <p className="clinic-address-line">{clinic.address}</p>
-                  {locationLabel && <p>{locationLabel}</p>}
-                  {clinic.description && <p>{clinic.description}</p>}
-                  {clinic.phone && (
-                    <p><strong>{t('Phone:')}</strong> <a href={'tel:' + clinic.phone.replace(/[^+\d]/g, '')}>{clinic.phone}</a></p>
-                  )}
-                  <p>
-                    <strong>{t('Services:')}</strong>{' '}
-                    {clinic.services.length > 0 ? clinic.services.join(', ') : t('Not listed')}
-                  </p>
-                  <p>
-                    <strong>{t('New patients:')}</strong>{' '}
-                    {clinic.accepting_new_patients ? t('Accepted') : t('Not currently accepted')}
-                  </p>
-                  <p className="next-availability">
-                    <strong>{t('Next available:')}</strong> {nextAvailabilityLabel}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="clinic-select-button"
-                  aria-pressed={isSelected}
-                  onClick={() => onSelectClinic(clinic)}
-                >
-                  {isSelected ? t('Selected') : t('Select clinic')}
-                </button>
-              </article>
-            )
-          })}
+                return (
+                  <article className={'clinic-card' + (isSelected ? ' selected' : '')} key={clinic.id}>
+                    <div className="clinic-details">
+                      <div className="clinic-card-header">
+                        <h4>{clinic.name}</h4>
+                        <span className="distance-pill">{clinic.distance_km.toFixed(1)} km</span>
+                      </div>
+                      {clinic.listing_status === 'demo' ? (
+                        <p className="clinic-listing-note"><strong>{t('Demo listing:')}</strong> {t('synthetic prototype data, not a real clinic.')}</p>
+                      ) : (
+                        <p className="clinic-listing-note">
+                          {t('Verified from ')}{clinic.source_name}{t(' on ')}{clinic.source_checked_on}
+                          {clinic.source_url && <> {' · '}<a href={clinic.source_url} target="_blank" rel="noreferrer">{t('View source')}</a></>}
+                        </p>
+                      )}
+                      <p className="clinic-address-line">{clinic.address}</p>
+                      {locationLabel && <p>{locationLabel}</p>}
+                      {clinic.description && <p>{clinic.description}</p>}
+                      {clinic.phone && (
+                        <p><strong>{t('Phone:')}</strong> <a href={'tel:' + clinic.phone.replace(/[^+\d]/g, '')}>{clinic.phone}</a></p>
+                      )}
+                      <p>
+                        <strong>{t('Services:')}</strong>{' '}
+                        {clinic.services.length > 0 ? clinic.services.join(', ') : t('Not listed')}
+                      </p>
+                      <p>
+                        <strong>{t('New patients:')}</strong>{' '}
+                        {clinic.accepting_new_patients ? t('Accepted') : t('Not currently accepted')}
+                      </p>
+                      <p className="next-availability">
+                        <strong>{t('Next available:')}</strong> {nextAvailabilityLabel}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="clinic-select-button"
+                      aria-pressed={isSelected}
+                      onClick={() => onSelectClinic(clinic)}
+                    >
+                      {isSelected ? t('Selected') : t('Select clinic')}
+                    </button>
+                  </article>
+                )
+              })}
+            </div>
+          </section>
         </div>
-        </>
       ) : (
         <p>{t('No clinics match these search options. Try a larger distance or remove a filter.')}</p>
       )}

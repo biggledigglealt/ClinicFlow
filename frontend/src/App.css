@@ -4,6 +4,65 @@
   padding: 24px;
 }
 
+.setup-required {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.setup-required__content {
+  width: min(100%, 680px);
+  padding: 32px;
+  border-left: 5px solid #2457e6;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.1);
+}
+
+.setup-required__eyebrow {
+  margin: 0 0 10px;
+  color: #2457e6;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.setup-required__content h1 {
+  margin: 0 0 12px;
+  font-size: 1.8rem;
+}
+
+.setup-required__content p,
+.setup-required__content li {
+  line-height: 1.65;
+}
+
+.setup-required__content ol {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding-left: 22px;
+}
+
+.setup-required__content code {
+  overflow-wrap: anywhere;
+  color: #1d4ed8;
+  font-size: 0.92em;
+}
+
+@media (max-width: 520px) {
+  .setup-required {
+    padding: 16px;
+  }
+
+  .setup-required__content {
+    padding: 24px 20px;
+  }
+}
+
 .app-layout {
   display: grid;
   grid-template-columns: 232px minmax(0, 1fr);
@@ -915,52 +974,25 @@
   outline-offset: 2px;
 }
 
-.clinic-view-toggle {
-  display: inline-flex;
-  gap: 8px;
-  margin: 0;
-  padding: 4px;
-  border: 1px solid #d8e4f0;
-  border-radius: 999px;
-  background: #f8fafc;
+.clinic-results-layout {
+  display: grid;
+  gap: 14px;
 }
 
-.view-toggle {
-  border: 0;
-  border-radius: 999px;
-  padding: 0.55rem 0.9rem;
-  color: #475569;
-  background: transparent;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.view-toggle.active {
-  color: #fff;
-  background: #2457e6;
-}
-
-.clinic-results-toolbar,
 .clinic-map-heading,
 .clinic-map-heading > div {
   display: flex;
   align-items: center;
 }
 
-.clinic-results-toolbar,
 .clinic-map-heading {
   justify-content: space-between;
   gap: 12px;
 }
 
-.clinic-results-toolbar {
-  margin: 4px 0 12px;
-  color: #475569;
-  font-size: 0.9rem;
-}
-
 .clinic-map-panel {
-  margin: 0 0 16px;
+  min-width: 0;
+  margin: 0;
   border: 1px solid #dfeaf3;
   border-radius: 14px;
   background: #f8fafc;
@@ -1001,6 +1033,41 @@
   width: 100%;
   height: 320px;
   background: #e7eef7;
+}
+
+@media (min-width: 1100px) {
+  .clinic-results-layout {
+    grid-template-columns: minmax(0, 1.65fr) minmax(290px, 1fr);
+    align-items: stretch;
+  }
+
+  .clinic-map-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .clinic-map-canvas {
+    height: 420px;
+    flex: 1 1 auto;
+  }
+
+  .clinic-results-list-panel {
+    height: 474px;
+    max-height: 474px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.clinic-results-list-panel {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dfeaf3;
+  border-radius: 14px;
+  background: #f8fafc;
 }
 
 .clinic-map-icon,
@@ -1061,7 +1128,7 @@
 
 .clinic-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .clinic-list-header {
@@ -1077,11 +1144,11 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   border: 1px solid #dfeaf3;
   background: #f8fbff;
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: 12px;
+  padding: 10px 12px;
 }
 
 .clinic-card.selected {
@@ -1162,7 +1229,7 @@
   flex: 0 0 auto;
   border: 1px solid #93b7ff;
   border-radius: 999px;
-  padding: 0.7rem 1rem;
+  padding: 0.55rem 0.75rem;
   color: #1d4ed8;
   background: #fff;
   font-weight: 700;

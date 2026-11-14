@@ -3,7 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { login, logout, register, requestPasswordReset, resendSignupVerification } from './lib/auth'
-import { getLocalEmailPreviewUrl, supabase } from './lib/supabase'
+import { getLocalEmailPreviewUrl, isSupabaseConfigured, supabase } from './lib/supabase'
 import { LanguageProvider } from './lib/LanguageProvider'
 import { translate } from './lib/i18n'
 import { PatientProfilePanel } from './components/PatientProfilePanel'
@@ -46,7 +46,7 @@ function SectionIcon({ section }: { section: AppSection }) {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="section-icon"><path d={paths[section]} /></svg>
 }
 
-function App() {
+function ClinicFlowApp() {
   const [user, setUser] = useState<User | null>(null)
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
@@ -549,6 +549,47 @@ function App() {
     </div>
     </LanguageProvider>
   )
+}
+
+function App() {
+  if (!isSupabaseConfigured) {
+    const language = typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('fr')
+      ? 'fr'
+      : 'en'
+    const copy = language === 'fr'
+      ? {
+          eyebrow: 'Configuration ClinicFlow',
+          title: 'Configuration Supabase requise',
+          description: 'ClinicFlow a besoin des paramètres Supabase pour charger les comptes et les rendez-vous.',
+          localPrefix: 'Pour le développement local, lancez',
+          localSuffix: 'depuis le dossier principal du projet.',
+          hosted: 'Pour une version hébergée, définissez VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY dans les variables de déploiement, puis reconstruisez l’application.',
+        }
+      : {
+          eyebrow: 'ClinicFlow setup',
+          title: 'Supabase setup required',
+          description: 'ClinicFlow needs Supabase settings to load accounts and appointments.',
+          localPrefix: 'For local development, run',
+          localSuffix: 'from the project root.',
+          hosted: 'For a hosted build, set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the deployment environment, then rebuild the app.',
+        }
+
+    return (
+      <main className="setup-required" lang={language}>
+        <section className="setup-required__content" aria-labelledby="setup-title">
+          <p className="setup-required__eyebrow">{copy.eyebrow}</p>
+          <h1 id="setup-title">{copy.title}</h1>
+          <p>{copy.description}</p>
+          <ol>
+            <li>{copy.localPrefix} <code>npm run dev</code> {copy.localSuffix}</li>
+            <li>{copy.hosted}</li>
+          </ol>
+        </section>
+      </main>
+    )
+  }
+
+  return <ClinicFlowApp />
 }
 
 export default App
