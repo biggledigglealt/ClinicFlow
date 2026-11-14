@@ -589,6 +589,61 @@
   text-underline-offset: 2px;
 }
 
+.oauth-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.oauth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+  height: 1px;
+  flex: 1;
+  background: #dbe4ef;
+  content: '';
+}
+
+.google-auth-button {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #1e293b;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.google-auth-button:hover,
+.google-auth-button:focus-visible {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.google-auth-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.google-auth-button svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
 .text-button {
   border: 0;
   padding: 0;

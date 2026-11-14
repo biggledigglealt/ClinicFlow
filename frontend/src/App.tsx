@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
-import { login, logout, register, requestPasswordReset, resendSignupVerification } from './lib/auth'
+import { login, logout, register, requestPasswordReset, resendSignupVerification, signInWithGoogle } from './lib/auth'
 import { getLocalEmailPreviewUrl, isSupabaseConfigured, supabase } from './lib/supabase'
 import { LanguageProvider } from './lib/LanguageProvider'
 import { translate } from './lib/i18n'
@@ -23,6 +23,18 @@ import './App.css'
 const localEmailPreviewUrl = getLocalEmailPreviewUrl()
 
 type AppSection = 'home' | 'calendar' | 'profile' | 'settings' | 'notifications' | 'help' | 'staff_access'
+
+function emailDeliveryHint(language: 'en' | 'fr') {
+  if (localEmailPreviewUrl) {
+    return language === 'fr'
+      ? 'Les courriels locaux apparaissent dans Mailpit avec le lien de boîte de réception ci-dessous.'
+      : 'Local emails appear in Mailpit through the inbox link below.'
+  }
+
+  return language === 'fr'
+    ? 'Mailpit n’est pas disponible dans cette version hébergée. Si aucun courriel n’arrive, demandez à l’équipe de vérifier la livraison des courriels dans Supabase.'
+    : 'Mailpit is not available on this hosted preview. If no email arrives, ask the team to check email delivery in Supabase.'
+}
 
 function BellIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="ui-icon"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
@@ -199,8 +211,8 @@ function ClinicFlowApp() {
       if (authMode === 'reset') {
         await requestPasswordReset(email.trim())
         setAuthMessage(accessibilityPreferences.language === 'fr'
-          ? `Si un compte existe pour ${email.trim()}, un lien de récupération a été envoyé.`
-          : `If an account exists for ${email.trim()}, a password recovery link has been sent.`)
+          ? `Si un compte existe pour ${email.trim()}, vérifiez la boîte de réception et le dossier indésirable. ${emailDeliveryHint('fr')}`
+          : `If an account exists for ${email.trim()}, check the inbox and spam folder. ${emailDeliveryHint('en')}`)
       } else if (authMode === 'login') {
         await login(email.trim(), password)
         setAuthMessage(t('You are signed in.'))
@@ -217,8 +229,8 @@ function ClinicFlowApp() {
           setVerificationEmail(signupEmail)
           setCanResendVerification(true)
           setAuthMessage(accessibilityPreferences.language === 'fr'
-            ? `Un lien de vérification a été envoyé à ${signupEmail}. Confirmez votre courriel avant de vous connecter.`
-            : `A verification link was sent to ${signupEmail}. Confirm your email before logging in.`)
+            ? `Vérifiez la boîte de réception de ${signupEmail} et le dossier indésirable pour un lien de vérification. ${emailDeliveryHint('fr')}`
+            : `Check ${signupEmail}'s inbox and spam folder for a verification link. ${emailDeliveryHint('en')}`)
         }
       }
     } catch (error) {
@@ -242,12 +254,28 @@ function ClinicFlowApp() {
     try {
       await resendSignupVerification(verificationEmail)
       setAuthMessage(accessibilityPreferences.language === 'fr'
-        ? `Si ${verificationEmail} doit encore être vérifié, un nouveau lien a été envoyé.`
-        : `If ${verificationEmail} still needs verification, a new link has been sent.`)
+        ? `Si ${verificationEmail} doit encore être vérifié, vérifiez la boîte de réception et le dossier indésirable. ${emailDeliveryHint('fr')}`
+        : `If ${verificationEmail} still needs verification, check the inbox and spam folder. ${emailDeliveryHint('en')}`)
     } catch (error) {
       setAuthError(t(error instanceof Error ? error.message : 'Could not resend the verification email.'))
     } finally {
       setIsResendingVerification(false)
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setAuthError('')
+    setAuthMessage('')
+    setIsSubmitting(true)
+    try {
+      await signInWithGoogle()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not start Google sign-in.'
+      setAuthError(/provider.*(disabled|not enabled|unsupported)/i.test(message)
+        ? t('Google sign-in is not configured for this project yet.')
+        : t(message))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -423,6 +451,21 @@ function ClinicFlowApp() {
                     : t('Send recovery link')}
             </button>
           </form>
+
+          {authMode !== 'reset' && !Capacitor.isNativePlatform() && (
+            <div className="oauth-actions">
+              <div className="oauth-divider"><span>{t('or')}</span></div>
+              <button type="button" className="google-auth-button" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+                <svg aria-hidden="true" viewBox="0 0 48 48">
+                  <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11c-.5 2.5-2 4.6-4.2 6v5.1h6.8c4-3.7 6-9 6-14.8Z" />
+                  <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.8l-6.8-5.1c-1.9 1.3-4.1 2.1-6.7 2.1-5.2 0-9.6-3.5-11.2-8.2H5.8v5.2C9.2 39.7 16 44 24 44Z" />
+                  <path fill="#FBBC05" d="M12.8 28c-.4-1.2-.7-2.6-.7-4s.3-2.8.7-4v-5.2H5.8C4.3 17.7 3.5 20.8 3.5 24s.8 6.3 2.3 9.2l7-5.2Z" />
+                  <path fill="#EA4335" d="M24 11.8c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 5.8 29.5 4 24 4 16 4 9.2 8.3 5.8 14.8l7 5.2c1.6-4.7 6-8.2 11.2-8.2Z" />
+                </svg>
+                {t('Continue with Google')}
+              </button>
+            </div>
+          )}
 
           <p className="auth-mode-switch">
             {authMode === 'reset' ? (
