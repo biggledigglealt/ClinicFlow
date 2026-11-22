@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(66);
+select plan(68);
 
 insert into auth.users (
     id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -516,6 +516,32 @@ select is(
       where id = '40000000-0000-4000-8000-000000000001'),
     (((now() at time zone 'America/Toronto')::date + 7) + time '10:00') at time zone 'America/Toronto',
     'Clinic Finder next availability respects the clinic appointment duration'
+);
+reset role;
+
+set local role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
+select lives_ok(
+    $$select public.reschedule_appointment(
+        (select id from public.appointments
+          where patient_id = '20000000-0000-4000-8000-000000000002'
+            and clinic_id = '40000000-0000-4000-8000-000000000001'
+            and start_at = (((now() at time zone 'America/Toronto')::date + 7) + time '09:00') at time zone 'America/Toronto'),
+        '30000000-0000-4000-8000-000000000001',
+        (((now() at time zone 'America/Toronto')::date + 7) + time '10:00') at time zone 'America/Toronto'
+    )$$,
+    'patient can reschedule an appointment to an available clinic time'
+);
+select is(
+    (select count(*)::int from public.appointments
+      where patient_id = '20000000-0000-4000-8000-000000000002'
+        and clinic_id = '40000000-0000-4000-8000-000000000001'
+        and start_at = (((now() at time zone 'America/Toronto')::date + 7) + time '10:00') at time zone 'America/Toronto'
+        and end_at = (((now() at time zone 'America/Toronto')::date + 7) + time '11:00') at time zone 'America/Toronto'),
+    1,
+    'rescheduling updates the appointment to the selected time and duration'
 );
 reset role;
 
