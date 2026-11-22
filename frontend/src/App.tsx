@@ -17,7 +17,7 @@ import { PlatformAdminPanel } from './components/PlatformAdminPanel'
 import { CalendarPage } from './features/calendar/CalendarPage'
 import { ClinicFinder } from './features/clinics/ClinicFinder'
 import type { Clinic } from './services/clinicService'
-import { defaultAccessibilityPreferences, getAccessibilityPreferences, type AccessibilityPreferences } from './services/operationsService'
+import { defaultAccessibilityPreferences, getAccessibilityPreferences, getUnreadNotificationCount, type AccessibilityPreferences } from './services/operationsService'
 import './App.css'
 
 const localEmailPreviewUrl = getLocalEmailPreviewUrl()
@@ -98,6 +98,7 @@ function ClinicFlowApp() {
         if (!session) {
           setIsPlatformAdmin(false)
           setHasPatientProfile(false)
+          setUnreadNotificationCount(0)
           setAccessibilityPreferences(defaultAccessibilityPreferences)
           setActiveSection('home')
         }
@@ -111,6 +112,28 @@ function ClinicFlowApp() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    const userId = user?.id
+    if (!userId) return
+
+    let active = true
+    const refreshUnreadCount = async () => {
+      try {
+        const count = await getUnreadNotificationCount()
+        if (active) setUnreadNotificationCount(count)
+      } catch {
+        // Keep the last known badge count if a background refresh briefly fails.
+      }
+    }
+
+    void refreshUnreadCount()
+    const refreshTimer = window.setInterval(() => void refreshUnreadCount(), 30000)
+    return () => {
+      active = false
+      window.clearInterval(refreshTimer)
+    }
+  }, [user?.id])
 
   useEffect(() => {
     const userId = user?.id
@@ -605,7 +628,7 @@ function ClinicFlowApp() {
             {activeSection === 'notifications' && !user && (
               <section className="panel access-prompt"><h2>{t('Sign in to view notifications')}</h2><p className="section-description">{t('Appointment and clinic updates are linked to your account.')}</p><button type="button" className="primary-button" onClick={openLogin}>{t('Log in')}</button></section>
             )}
-            {user && <div className="notification-page" hidden={activeSection !== 'notifications'}><NotificationCenter key={user.id} onUnreadCountChange={setUnreadNotificationCount} /></div>}
+            {user && activeSection === 'notifications' && <NotificationCenter key={user.id} onUnreadCountChange={setUnreadNotificationCount} />}
           </main>
         </div>
       </div>
