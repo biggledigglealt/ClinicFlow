@@ -118,6 +118,7 @@ function ClinicFlowApp() {
   const [activeSection, setActiveSection] = useState<AppSection>('home')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const authPanelRef = useRef<HTMLElement | null>(null)
+  const accountMenuRef = useRef<HTMLDetailsElement | null>(null)
   const activeUserIdRef = useRef<string | null>(null)
   const t = (message: string) => translate(message, accessibilityPreferences.language)
   const isAuthGated = !isAuthInitialized || !user
@@ -148,6 +149,18 @@ function ClinicFlowApp() {
     })
     return () => window.cancelAnimationFrame(scrollFrame)
   }, [showAuth, user])
+
+  useEffect(() => {
+    function closeAccountMenuOutside(event: PointerEvent) {
+      const menu = accountMenuRef.current
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) {
+        menu.open = false
+      }
+    }
+
+    document.addEventListener('pointerdown', closeAccountMenuOutside)
+    return () => document.removeEventListener('pointerdown', closeAccountMenuOutside)
+  }, [])
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -533,7 +546,27 @@ function ClinicFlowApp() {
                 <BellIcon />{unreadNotificationCount > 0 && <span className="unread-badge">{unreadNotificationCount}</span>}
               </button>}
               {user ? (
-                <div className="account-actions"><span className="signed-in-label">{t('Signed in: ')}{user.email}</span><button type="button" className="primary-button" onClick={handleLogout}>{t('Log out')}</button></div>
+                <details
+                  ref={accountMenuRef}
+                  className="account-menu"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault()
+                      event.currentTarget.open = false
+                      event.currentTarget.querySelector<HTMLElement>('summary')?.focus()
+                    }
+                  }}
+                >
+                  <summary className="account-menu-trigger" aria-label={t('Account options')}>
+                    <span className="account-menu-avatar" aria-hidden="true">{user.email?.trim().charAt(0).toUpperCase() || 'U'}</span>
+                    <span className="account-menu-email">{user.email ?? t('Account')}</span>
+                    <span className="account-menu-chevron" aria-hidden="true">⌄</span>
+                  </summary>
+                  <div className="account-menu-popover">
+                    <p>{t('Signed in: ')}{user.email}</p>
+                    <button type="button" className="primary-button" onClick={handleLogout}>{t('Log out')}</button>
+                  </div>
+                </details>
               ) : null}
             </div>
           </header>

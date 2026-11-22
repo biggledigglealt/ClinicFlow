@@ -10,6 +10,8 @@ const french: Record<string, string> = Object.fromEntries([
   ['Support & contact', 'Aide et coordonnées'],
   ['Booking help and clinic contact details.', 'Aide à la réservation et coordonnées des cliniques.'],
   ['ClinicFlow prototype', 'Prototype ClinicFlow'],
+  ['Account', 'Compte'],
+  ['Account options', 'Options du compte'],
   ['Enter a city or postal code', 'Saisissez une ville ou un code postal'],
   ['Sign in to book', 'Connectez-vous pour prendre rendez-vous'],
   ['Preparing your booking', 'Préparation de votre réservation'],

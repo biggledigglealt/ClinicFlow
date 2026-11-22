@@ -300,9 +300,35 @@ async function signInAsPatient(page: Page, platformAdmin = false) {
   await page.getByLabel('Email', { exact: true }).fill('patient@example.test')
   await page.getByLabel(/Password/).fill('Synthetic-password-123!')
   await page.locator('#auth-panel button[type="submit"]').click()
-  await expect(page.getByRole('button', { name: 'Log out', exact: true })).toBeVisible()
+  await expect(page.locator('.account-menu-trigger')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Log out', exact: true })).toBeHidden()
   return backend
 }
+
+test('logout is separated from toolbar navigation and requires opening account options', async ({ page }) => {
+  await signInAsPatient(page)
+
+  const accountMenu = page.locator('.account-menu')
+  const accountTrigger = page.locator('.account-menu-trigger')
+  const logoutButton = page.getByRole('button', { name: 'Log out', exact: true })
+  await expect(logoutButton).toBeHidden()
+
+  if ((page.viewportSize()?.width ?? 1024) <= 700) {
+    const navigationButton = page.getByRole('button', { name: 'Open navigation menu' })
+    await expect(navigationButton).toBeVisible()
+    const accountTop = await accountMenu.evaluate((element) => element.getBoundingClientRect().top)
+    const navigationBottom = await navigationButton.evaluate((element) => element.getBoundingClientRect().bottom)
+    expect(accountTop).toBeGreaterThan(navigationBottom)
+    await expect(accountMenu).toHaveCSS('border-top-width', '1px')
+  } else {
+    await expect(accountMenu).toHaveCSS('border-left-width', '1px')
+  }
+
+  await accountTrigger.click()
+  await expect(logoutButton).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(logoutButton).toBeHidden()
+});
 
 async function navigateThroughMainMenu(page: Page, label: string) {
   if ((page.viewportSize()?.width ?? 1024) <= 700) {

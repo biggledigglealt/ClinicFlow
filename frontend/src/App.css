@@ -513,16 +513,92 @@
   opacity: 0.7;
 }
 
-.account-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.account-menu {
+  position: relative;
+  margin-left: 8px;
+  padding-left: 18px;
+  border-left: 1px solid #dce7f3;
 }
 
-.signed-in-label {
-  color: #475569;
+.account-menu-trigger {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 11px 5px 6px;
+  border: 1px solid #dce7f3;
+  border-radius: 999px;
+  color: #334155;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+  list-style: none;
+}
+
+.account-menu-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.account-menu-trigger:hover,
+.account-menu-trigger:focus-visible,
+.account-menu[open] > .account-menu-trigger {
+  border-color: #93b4fb;
+  background: #f8fbff;
+}
+
+.account-menu-avatar {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #1d4ed8;
+  background: #eaf1ff;
   font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.account-menu-email {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-chevron {
+  color: #64748b;
+  transition: transform 120ms ease;
+}
+
+.account-menu[open] .account-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.account-menu-popover {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: min(280px, calc(100vw - 32px));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #dce7f3;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+}
+
+.account-menu-popover p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.88rem;
   overflow-wrap: anywhere;
+}
+
+.account-menu-popover .primary-button {
+  justify-self: stretch;
 }
 
 .auth-panel {
@@ -2759,17 +2835,32 @@ button.calendar-time-card:focus-visible {
     display: inline-grid;
   }
 
-  .topbar-actions > .primary-button,
-  .account-actions .primary-button {
+  .topbar-actions > .primary-button {
     padding: 0.68rem 0.9rem;
   }
 
-  .account-actions {
-    gap: 8px;
+  .account-menu {
+    flex: 1 1 100%;
+    margin-left: 0;
+    padding-top: 10px;
+    padding-left: 0;
+    border-top: 1px solid #e2e8f0;
+    border-left: 0;
   }
 
-  .signed-in-label {
-    display: none;
+  .account-menu-trigger {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .account-menu-email {
+    max-width: none;
+    flex: 1 1 auto;
+  }
+
+  .account-menu-popover {
+    left: 0;
+    right: auto;
   }
 
   .mobile-bottom-navigation {
@@ -2833,11 +2924,6 @@ button.calendar-time-card:focus-visible {
 
   .hero-panel h2 {
     font-size: 1.55rem;
-  }
-
-  .account-actions {
-    width: auto;
-    justify-content: flex-end;
   }
 
   .profile-form {
