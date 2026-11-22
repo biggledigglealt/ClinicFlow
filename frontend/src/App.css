@@ -1235,6 +1235,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
+}
+
+.clinic-card-header h4 {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .distance-pill {
@@ -1709,6 +1715,10 @@
 }
 
 .calendar-grid-day .calendar-date-number {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  line-height: 1;
   font-size: 1rem;
 }
 
@@ -2086,6 +2096,21 @@ button.calendar-time-card:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .clinic-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .clinic-card-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .clinic-select-button {
+    width: 100%;
+    min-height: 44px;
+  }
+
   .operations-time-pair {
     grid-template-columns: 1fr;
   }
@@ -2174,15 +2199,27 @@ button.calendar-time-card:focus-visible {
   }
 
   .calendar-toolbar-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     width: 100%;
+    gap: 8px;
   }
 
   .calendar-date-label {
-    flex: 1 1 auto;
+    display: block;
+    min-width: 0;
   }
 
   .calendar-date-label input {
+    display: block;
     width: 100%;
+    min-width: 0;
+  }
+
+  .calendar-today-button {
+    min-height: 44px;
+    white-space: nowrap;
   }
 
   .calendar-display-toolbar {
