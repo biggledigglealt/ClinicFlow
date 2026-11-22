@@ -85,9 +85,9 @@ Figure 6. Accessibility preferences from selection through application and stora
 
 The Notification System creates generic in-app notices for bookings, cancellations, reschedules, and waitlist offers. Clinic announcements appear in the selected clinic's updates. Messages should remain generic and must not include health details; the prototype does not automatically detect sensitive text entered by staff.
 
-Appointment database triggers insert generic in-app notification records and private email outbox jobs for confirmations, cancellation/reschedule updates, and eligible reminders scheduled 24 hours before an appointment. The outbox stores account and appointment identifiers, not email addresses or message bodies. RLS restricts each patient to their own in-app notices. The notification centre polls for new records every 15 seconds while the page is open, shows an unread count, and lets users mark items as read. A local command can process due email jobs through Mailpit, and a synthetic confirmation was captured in the local test. No production provider or scheduled background worker is configured; SMS and push are not implemented.
+Appointment database triggers insert generic in-app notification records and private email outbox jobs for confirmations, cancellation/reschedule updates, and eligible reminders scheduled 24 hours before an appointment. The outbox stores account and appointment identifiers, not email addresses or message bodies. RLS restricts each patient to their own in-app notices. The notification centre polls for new records every 15 seconds while the page is open, shows an unread count, and lets users mark items as read. While local development is running, a worker polls due email jobs every 10 seconds and captures them in Mailpit; the one-shot command is also available. A synthetic confirmation was captured in the local test. No production provider or scheduled background worker is configured; SMS and push are not implemented.
 
-In-app notices appear while the user is signed in and the application is open. A local email job is delivered only when the local worker is run after it becomes due. If the hosted app is closed, the prototype does not yet run a scheduled worker to deliver a reminder. The one-minute target is not established for production or background delivery and must not be claimed as achieved.
+In-app notices appear while the user is signed in and the application is open. A local email job is delivered to Mailpit within about 10 seconds while npm run dev is running. If the hosted app is closed, the prototype does not yet run a scheduled worker to deliver a reminder. The one-minute target is not established for production or background delivery and must not be claimed as achieved.
 
 Figure 7. In-app notification flow and proposed external delivery.
 [INSERT PHOTO OF NOTIFICATION SYSTEM DRAWING]
@@ -167,7 +167,7 @@ Draw the implemented flow:
 
 Booking, cancellation, reschedule, or eligible cancellation offer -> database trigger -> notifications table -> patient Notification Centre polling every 15 seconds -> mark read.
 
-Add the expiring waitlist offer and its standard booking recheck. Draw the private email outbox and the local Mailpit worker as solid, and show that the local worker is manually run. Use a dashed arrow for hosted provider delivery, a scheduled background worker, SMS, and push. Label messages "generic; no health details" and label waitlist offers "not reserved; booking is revalidated."
+Add the expiring waitlist offer and its standard booking recheck. Draw the private email outbox and the local Mailpit worker as solid, and show that the local worker polls while the development app runs. Use a dashed arrow for hosted provider delivery, a scheduled background worker, SMS, and push. Label messages "generic; no health details" and label waitlist offers "not reserved; booking is revalidated."
 
 
 FINAL TEAM CHECK BEFORE SUBMISSION

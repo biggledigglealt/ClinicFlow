@@ -18,6 +18,8 @@ function sqlId(value) {
   return `'${value}'::uuid`
 }
 
+const quiet = process.argv.includes('--quiet')
+
 const claimSql = `
 with due as (
   select id from public.notification_email_outbox
@@ -54,7 +56,7 @@ try {
 }
 
 if (claimed.length === 0) {
-  console.log('No due local email notifications.')
+  if (!quiet) console.log('No due local email notifications.')
   process.exit(0)
 }
 

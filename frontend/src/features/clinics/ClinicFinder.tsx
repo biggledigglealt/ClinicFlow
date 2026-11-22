@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLanguage, useTranslate } from '../../lib/i18n'
 import {
   listClinicServiceOptions,
@@ -6,6 +6,12 @@ import {
   type Clinic,
   type ClinicSearchOptions,
 } from '../../services/clinicService'
+
+type SortOption = 'nearest' | 'earliest' | 'alphabetical'
+
+const ClinicLocationsMap = lazy(() => import('./ClinicLocationsMap').then((module) => ({
+  default: module.ClinicLocationsMap,
+})))
 
 interface ClinicFinderProps {
   selectedClinicId: string | null
@@ -28,6 +34,35 @@ function formatNextAvailable(value: string, timeZone: string, language: 'en' | '
   }).format(new Date(value))
 }
 
+function sortClinics(clinics: Clinic[], sortBy: SortOption) {
+  const sorted = [...clinics]
+
+  switch (sortBy) {
+    case 'earliest':
+      sorted.sort((a, b) => {
+        const aTime = a.next_available_at ? new Date(a.next_available_at).getTime() : Number.MAX_SAFE_INTEGER
+        const bTime = b.next_available_at ? new Date(b.next_available_at).getTime() : Number.MAX_SAFE_INTEGER
+        return aTime - bTime || a.distance_km - b.distance_km
+      })
+      break
+    case 'alphabetical':
+      sorted.sort((a, b) => a.name.localeCompare(b.name))
+      break
+    case 'nearest':
+    default:
+      sorted.sort((a, b) => a.distance_km - b.distance_km || a.name.localeCompare(b.name))
+      break
+  }
+
+  return sorted
+}
+
+function clinicMapUrl(focusedClinic: Clinic | undefined) {
+  if (focusedClinic?.latitude == null || focusedClinic.longitude == null) return null
+
+  return `https://www.openstreetmap.org/?mlat=${focusedClinic.latitude}&mlon=${focusedClinic.longitude}#map=14/${focusedClinic.latitude}/${focusedClinic.longitude}`
+}
+
 export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderProps) {
   const t = useTranslate()
   const language = useLanguage()
@@ -38,8 +73,27 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [acceptingNewPatients, setAcceptingNewPatients] = useState(false)
   const [onlyWithAvailability, setOnlyWithAvailability] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>('nearest')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const sortedClinics = useMemo(() => sortClinics(clinics, sortBy), [clinics, sortBy])
+  const selectedMapClinic = sortedClinics.find((clinic) => clinic.id === selectedClinicId)
+  const focusedMapClinic = selectedMapClinic?.latitude != null && selectedMapClinic.longitude != null
+    ? selectedMapClinic
+    : sortedClinics.find((clinic) => clinic.latitude != null && clinic.longitude != null)
+      ?? selectedMapClinic
+      ?? sortedClinics[0]
+  const mapUrl = clinicMapUrl(focusedMapClinic)
+
+  function resetFilters() {
+    setLocation(defaultSearch.location)
+    setMaxDistanceKm(defaultSearch.maxDistanceKm)
+    setSelectedServices([])
+    setAcceptingNewPatients(false)
+    setOnlyWithAvailability(false)
+    setSortBy('nearest')
+    void loadClinics(defaultSearch)
+  }
 
   useEffect(() => {
     let isCurrent = true
@@ -133,6 +187,26 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
           </label>
         </div>
 
+        <div className="clinic-search-fields clinic-search-secondary-row">
+          <label htmlFor="clinic-sort-search">
+            {t('Sort by')}
+            <select
+              id="clinic-sort-search"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value as SortOption)}
+            >
+              <option value="nearest">{t('Nearest clinic')}</option>
+              <option value="earliest">{t('Earliest appointment')}</option>
+              <option value="alphabetical">{t('Alphabetical')}</option>
+            </select>
+          </label>
+
+          <div className="clinic-search-meta" role="status" aria-label={t('Search results')} aria-live="polite">
+            <span>{t('Search results')}</span>
+            <strong>{sortedClinics.length}</strong>
+          </div>
+        </div>
+
         <fieldset className="clinic-service-filter">
           <legend>{t('Services')}</legend>
           {serviceOptions.length > 0 ? (
@@ -173,62 +247,93 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
         </div>
 
         <button type="submit" disabled={isLoading}>
-          {isLoading ? t('Searching…') : t('Search clinics')}
+          {isLoading ? t('Searching\u2026') : t('Search clinics')}
+        </button>
+        <button type="button" onClick={resetFilters} disabled={isLoading}>
+          {t('Reset filters')}
         </button>
       </form>
 
       {error && <p className="auth-error" role="alert">{t(error)}</p>}
       {isLoading ? (
-        <p role="status">Finding nearby clinics…</p>
-      ) : clinics.length > 0 ? (
-        <div className="clinic-list" aria-live="polite">
-          {clinics.map((clinic) => {
-            const isSelected = clinic.id === selectedClinicId
-            const locationLabel = [clinic.city, clinic.province].filter(Boolean).join(', ')
+        <p role="status">{t('Finding nearby clinics\u2026')}</p>
+      ) : sortedClinics.length > 0 ? (
+        <div className="clinic-results-layout">
+          <section className="clinic-map-panel" aria-label={t('Clinic map view')}>
+            <div className="clinic-map-heading">
+              <div>
+                <strong>{t('Map of clinic results')}</strong>
+                <span>{t('Select a pin or clinic to choose a clinic for booking.')}</span>
+              </div>
+              {mapUrl && <a href={mapUrl} target="_blank" rel="noreferrer">{t('Open map')}</a>}
+            </div>
+            {mapUrl && focusedMapClinic ? (
+              <Suspense fallback={<p className="clinic-map-unavailable" role="status">{t('Loading map…')}</p>}>
+                <ClinicLocationsMap clinics={sortedClinics} selectedClinicId={selectedClinicId} onSelectClinic={onSelectClinic} />
+              </Suspense>
+            ) : (
+              <p className="clinic-map-unavailable">{t('A map location is not available for these clinics yet.')}</p>
+            )}
+          </section>
 
-            return (
-              <article className={`clinic-card${isSelected ? ' selected' : ''}`} key={clinic.id}>
-                <div className="clinic-details">
-                  <h4>{clinic.name}</h4>
-                  {clinic.listing_status === 'demo' ? (
-                    <p className="clinic-listing-note"><strong>{t('Demo listing:')}</strong> {t('synthetic prototype data, not a real clinic.')}</p>
-                  ) : (
-                    <p className="clinic-listing-note">
-                      {t('Verified from')} {clinic.source_name} {t('on')} {clinic.source_checked_on}
-                      {clinic.source_url && <> · <a href={clinic.source_url} target="_blank" rel="noreferrer">{t('View source')}</a></>}
-                    </p>
-                  )}
-                  <p>{clinic.address}</p>
-                  {locationLabel && <p>{locationLabel}</p>}
-                  {clinic.description && <p>{clinic.description}</p>}
-                  {clinic.phone && <p><strong>{t('Phone:')}</strong> <a href={'tel:' + clinic.phone.replace(/[^+\d]/g, '')}>{clinic.phone}</a></p>}
-                  <p><strong>{t('Approx. distance:')}</strong> {clinic.distance_km.toFixed(1)} km</p>
-                  <p>
-                    <strong>{t('Services:')}</strong>{' '}
-                    {clinic.services.length > 0 ? clinic.services.join(', ') : t('Not listed')}
-                  </p>
-                  <p>
-                    <strong>{t('New patients:')}</strong>{' '}
-                    {clinic.accepting_new_patients ? t('Accepted') : t('Not currently accepted')}
-                  </p>
-                  <p>
-                    <strong>{t('Next available:')}</strong>{' '}
-                    {clinic.next_available_at
-                      ? formatNextAvailable(clinic.next_available_at, clinic.time_zone, language)
-                      : t('No opening found in the next 60 days')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="clinic-select-button"
-                  aria-pressed={isSelected}
-                  onClick={() => onSelectClinic(clinic)}
-                >
-                  {isSelected ? t('Selected') : t('Select clinic')}
-                </button>
-              </article>
-            )
-          })}
+          <section className="clinic-results-list-panel" aria-label={t('Clinic search results')}>
+            <div className="clinic-list-header">
+              <strong>{sortedClinics.length} {t('clinics found')}</strong>
+            </div>
+            <div className="clinic-list" aria-live="polite">
+              {sortedClinics.map((clinic) => {
+                const isSelected = clinic.id === selectedClinicId
+                const locationLabel = [clinic.city, clinic.province].filter(Boolean).join(', ')
+                const nextAvailabilityLabel = clinic.next_available_at
+                  ? formatNextAvailable(clinic.next_available_at, clinic.time_zone, language)
+                  : t('No opening found in the next 60 days')
+
+                return (
+                  <article className={'clinic-card' + (isSelected ? ' selected' : '')} key={clinic.id}>
+                    <div className="clinic-details">
+                      <div className="clinic-card-header">
+                        <h4>{clinic.name}</h4>
+                        <span className="distance-pill">{clinic.distance_km.toFixed(1)} km</span>
+                      </div>
+                      {clinic.listing_status === 'demo' ? (
+                        <p className="clinic-listing-note"><strong>{t('Demo listing:')}</strong> {t('synthetic prototype data, not a real clinic.')}</p>
+                      ) : (
+                        <p className="clinic-listing-note">
+                          {t('Verified from ')}{clinic.source_name}{t(' on ')}{clinic.source_checked_on}
+                          {clinic.source_url && <> {' · '}<a href={clinic.source_url} target="_blank" rel="noreferrer">{t('View source')}</a></>}
+                        </p>
+                      )}
+                      <p className="clinic-address-line">{clinic.address}</p>
+                      {locationLabel && <p>{locationLabel}</p>}
+                      {clinic.description && <p>{clinic.description}</p>}
+                      {clinic.phone && (
+                        <p><strong>{t('Phone:')}</strong> <a href={'tel:' + clinic.phone.replace(/[^+\d]/g, '')}>{clinic.phone}</a></p>
+                      )}
+                      <p>
+                        <strong>{t('Services:')}</strong>{' '}
+                        {clinic.services.length > 0 ? clinic.services.join(', ') : t('Not listed')}
+                      </p>
+                      <p>
+                        <strong>{t('New patients:')}</strong>{' '}
+                        {clinic.accepting_new_patients ? t('Accepted') : t('Not currently accepted')}
+                      </p>
+                      <p className="next-availability">
+                        <strong>{t('Next available:')}</strong> {nextAvailabilityLabel}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="clinic-select-button"
+                      aria-pressed={isSelected}
+                      onClick={() => onSelectClinic(clinic)}
+                    >
+                      {isSelected ? t('Selected') : t('Select clinic')}
+                    </button>
+                  </article>
+                )
+              })}
+            </div>
+          </section>
         </div>
       ) : (
         <p>{t('No clinics match these search options. Try a larger distance or remove a filter.')}</p>

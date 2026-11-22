@@ -1,32 +1,28 @@
-# React + TypeScript + Vite
+# ClinicFlow frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The frontend is a React, TypeScript, and Vite application. It contains the clinic finder and map, patient booking calendar, account/profile screens, accessibility settings, notifications, and clinic staff operations.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+From the repository root, use `npm run dev`. The root startup command starts local Supabase, applies migrations, loads synthetic clinic data, injects the local publishable key, and starts Vite. Docker must be running. Do not run `npm --prefix frontend run dev` by itself unless local Supabase is already running and `VITE_SUPABASE_PUBLISHABLE_KEY` is set.
 
-## React Compiler
+Local Vite requests use the `/supabase` proxy to reach local Supabase. Local signup does not require email verification; Mailpit captures local email. See the [root README](../README.md) for setup and database commands.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Build and lint
 
-## Expanding the Oxlint configuration
+From the repository root:
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm --prefix frontend run lint
+npm --prefix frontend run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The build writes static files to `frontend/dist/`.
+
+## Hosted deployment
+
+Vercel uses `frontend/` as the root directory, `npm run build` as the build command, and `dist` as the output directory. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the hosting environment. Only a publishable key belongs in frontend configuration; never put a Supabase secret or service-role key in a `VITE_` variable.
+
+Keep Preview and Production connected to separate Supabase projects before using real accounts or clinic data. The current Vercel Preview and Production bundles point to the same hosted project. Any signup or booking from either deployment may write to that shared backend.
+
+Clinic listings currently identify synthetic examples as demo data. Do not use real patient information until the hosted schema, access policies, privacy controls, and operational procedures have been reviewed.

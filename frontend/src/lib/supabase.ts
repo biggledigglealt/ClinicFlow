@@ -1,17 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.DEV
-  ? `${window.location.origin}/supabase`
-  : import.meta.env.VITE_SUPABASE_URL
+const configuredSupabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseUrl = new URL(
+  configuredSupabaseUrl || '/supabase',
+  window.location.origin,
+).toString()
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+const hasPlaceholderUrl = configuredSupabaseUrl?.includes('YOUR_PROJECT_ID') ?? false
+const hasPlaceholderKey = supabasePublishableKey?.includes('YOUR_SUPABASE_PUBLISHABLE_KEY') ?? false
 
-if (!supabasePublishableKey || !supabaseUrl) {
-  throw new Error(
-    'Missing Supabase configuration. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY for the hosted app.',
-  )
-}
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl && supabasePublishableKey && !hasPlaceholderUrl && !hasPlaceholderKey,
+)
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey)
+export const supabase = createClient(supabaseUrl, supabasePublishableKey || 'not-configured', {
+  auth: { flowType: 'pkce' },
+})
 
 export function getLocalEmailPreviewUrl() {
   const hostname = window.location.hostname

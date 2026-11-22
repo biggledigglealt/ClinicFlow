@@ -17,6 +17,8 @@ export interface Clinic {
   source_name: string | null
   source_url: string | null
   source_checked_on: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
 export interface ClinicSearchOptions {
@@ -25,6 +27,24 @@ export interface ClinicSearchOptions {
   services: string[]
   acceptingNewPatients: boolean
   onlyWithAvailability: boolean
+}
+
+export type CalendarClinic = Clinic
+
+export async function listCalendarClinics() {
+  const { data, error } = await supabase
+    .from('clinics')
+    .select('id, name, address, city, province, phone, description, time_zone, services, accepting_new_patients, listing_status, source_name, source_url, source_checked_on, latitude, longitude')
+    .eq('is_active', true)
+    .in('listing_status', ['demo', 'verified'])
+    .order('name')
+
+  if (error) throw error
+  return ((data ?? []) as Omit<CalendarClinic, 'distance_km' | 'next_available_at'>[]).map((clinic) => ({
+    ...clinic,
+    distance_km: 0,
+    next_available_at: null,
+  }))
 }
 
 export async function searchClinics(options: ClinicSearchOptions) {
@@ -56,7 +76,7 @@ export async function searchClinics(options: ClinicSearchOptions) {
 
   const { data: provenance, error: provenanceError } = await supabase
     .from('clinics')
-    .select('id, listing_status, source_name, source_url, source_checked_on')
+    .select('id, listing_status, source_name, source_url, source_checked_on, latitude, longitude')
     .in('id', searchResults.map((clinic) => clinic.id))
   if (provenanceError) throw provenanceError
   const provenanceById = new Map((provenance ?? []).map((item) => [item.id, item]))
@@ -71,6 +91,8 @@ export async function searchClinics(options: ClinicSearchOptions) {
       source_name: source.source_name,
       source_url: source.source_url,
       source_checked_on: source.source_checked_on,
+      latitude: source.latitude,
+      longitude: source.longitude,
     }]
   })
 }

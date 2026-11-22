@@ -34,6 +34,17 @@ function dateInTimeZone(timeZone: string) {
   return `${part('year')}-${part('month')}-${part('day')}`
 }
 
+function dateInTimeZoneForValue(value: string, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(value))
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? ''
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
 function nextBusinessDateInTimeZone(timeZone: string) {
   const [year, month, day] = dateInTimeZone(timeZone).split('-').map(Number)
   const date = new Date(Date.UTC(year, month - 1, day))
@@ -272,7 +283,16 @@ export function AppointmentBookingPanel({
           </form>
 
           {error && <p className="auth-error" role="alert">{error}</p>}
-          {message && <p className="auth-message" role="status">{message}</p>}
+          {message && (reschedulingAppointmentId ? (
+            <div className="appointment-reschedule-prompt" role="status">
+              <p>{message}</p>
+              <button type="button" className="text-button" disabled={bookingSlot !== null} onClick={() => {
+                setReschedulingAppointmentId(null)
+                setMessage('')
+                setError('')
+              }}>{t('Cancel rescheduling')}</button>
+            </div>
+          ) : <p className="auth-message" role="status">{message}</p>)}
 
           {slots.length > 0 ? (
             <div className="appointment-slots" aria-live="polite">
@@ -337,8 +357,12 @@ export function AppointmentBookingPanel({
                               setReschedulingAppointmentId(appointment.id)
                               setError('')
                               setMessage(t('Choose another available time at this clinic to reschedule.'))
-                              setHasSearched(false)
-                              setSlots([])
+                              setHasSearched(true)
+                              const appointmentDate = dateInTimeZoneForValue(appointment.start_at, timeZone)
+                              if (appointmentDate !== date) {
+                                setSlots([])
+                                setDate(appointmentDate)
+                              }
                             }}>{t('Reschedule')}</button>
                         ) : <span className="input-hint">{t('Select this clinic to reschedule.')}</span>}
                       </div>

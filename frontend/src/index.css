@@ -1,9 +1,18 @@
 :root {
+  --color-ink: #17233a;
+  --color-muted: #64748b;
+  --color-brand: #2563eb;
+  --color-brand-deep: #1d4ed8;
+  --color-brand-soft: #eaf1ff;
+  --color-brand-wash: #f5f8ff;
+  --color-brand-line: #cbd9ee;
+  --color-coral: #2457e6;
+  --color-focus: #93c5fd;
   font-family: 'Inter', 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #0f172a;
-  background: #f3f7fb;
+  color: var(--color-ink);
+  background: #f4f7fb;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -22,7 +31,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #edf4ff 0%, #f9fbfd 100%);
+  background: #f4f7fb;
 }
 
 button,

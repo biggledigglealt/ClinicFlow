@@ -64,7 +64,7 @@ The project manager of the given week will set the meeting agenda 24 hours prior
 
 Meeting minutes will be recorded and summarized via the GoodNotes program and sent out after the meeting, as well as linked in the Trello board week by week.
 
-Link: [https\://trello.com/invite/b/6aa9ad2a3a3e7f9beb60d640/ATTIbdec62b60d596b8ccabdf1274b3aef224B1DDA9F/gng1103-project](https://trello.com/invite/b/6aa9ad2a3a3e7f9beb60d640/ATTIbdec62b60d596b8ccabdf1274b3aef224B1DDA9F/gng1103-project)
+The Trello board is shared with team members through a private invitation.
 
 6. Member role and responsibilities, and role rotation matrix in the project team: To foster the development of a diverse skill set among your project team members, it is expected that each member contributes to all facets of the project, rather than specializing in a single area. One effective approach to achieving this objective is to implement a weekly role rotation system within the team, providing each member with the opportunity to experience and perform the various roles and responsibilities. To facilitate this process, please refer to the “**Role Rotation Matrix of Members**” document and generate a role rotation matrix for your project team members below.
 
