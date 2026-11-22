@@ -96,7 +96,7 @@ The spreadsheet screenshots supplied with the draft are included with the Test P
 
 # **5**   	**Target Specifications and Analysis**
 
-## **5.1**      **Functional-Requirements**
+## **5.1**      **Functional Requirements**
 
 The functional requirements describe the main tasks that ClinicFlow must allow patients and clinic staff to complete. These requirements focus on simplifying appointment management, making clinic searching more efficient, and ensuring that appointment information is accurate. Table 1 presents the functional target specifications and the methods used to verify them.
 
@@ -129,8 +129,6 @@ Table 2\. Target Specifications for Non-Functional Requirements
 | User setup time | \< | 5 | mins | Timed new user setup testing |
 | Data encrypted | \= | 100 | % | Security testing |
 | Audit logging | \= | 100 | % | Log inspection |
-
-## 
 
 ## **5.3**      **Constraints**
 
