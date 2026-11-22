@@ -2,8 +2,8 @@
 
 **Find clinics, compare appointment times, and manage schedules in one place.**
 
-[![CI](https://github.com/zixxenK/ClinicFlow/actions/workflows/ci.yml/badge.svg?branch=feature%2Fsupabase-foundation)](https://github.com/zixxenK/ClinicFlow/actions/workflows/ci.yml)
-[Open the preview](https://clinic-flow-git-feature-supabase-foundation-equillibrium1.vercel.app/)
+[![CI](https://github.com/zixxenK/ClinicFlow/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zixxenK/ClinicFlow/actions/workflows/ci.yml)
+[Open ClinicFlow](HOSTED_PREVIEW_URL_REMOVED)
 
 ClinicFlow is a responsive web prototype for clinic discovery, appointment booking, and day-to-day scheduling. It supports patient and clinic staff workflows, with a focus on clear availability and simple operations.
 

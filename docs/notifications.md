@@ -26,7 +26,7 @@ To deliver verification and password recovery email from the hosted project:
 
 1. Select an email provider and verify the sender domain and address with that provider.
 2. Enter the provider's SMTP host, port, username, password, sender address, and sender name in the hosted Supabase project's Auth SMTP settings. Keep SMTP credentials in Supabase's secret settings, never in Vercel frontend variables or source control.
-3. Set the hosted Auth Site URL to the canonical app URL and allow the app's exact redirect origins. The current web client redirects to the origin that opened it, so allow `https://clinic-flow-git-feature-supabase-foundation-equillibrium1.vercel.app` for this preview and the production origin when one is selected.
+3. Set the hosted Auth Site URL to `HOSTED_PREVIEW_URL_REMOVED and add that exact origin to Supabase's allowed redirect URLs. The hosted app's public entry link is this production domain; use local URLs only for local development.
 4. Keep email confirmation enabled, then verify signup, resend, and password recovery with a team controlled mailbox. Check Supabase Auth logs and the provider's delivery events if a message does not arrive.
 
 Until custom SMTP is configured and verified, a successful signup response is not proof that the verification email reached the recipient.
@@ -37,7 +37,7 @@ The web login form offers Google OAuth. Configure Google under **Authentication 
 
 1. Create a Google OAuth 2.0 web client and add `HOSTED_SUPABASE_URL_REMOVED as its authorized redirect URI.
 2. Enter the Google client ID and client secret directly in Supabase Auth's Google provider settings. Do not put the client secret in Vercel or frontend code.
-3. Add the exact Vercel preview origin above to Supabase's allowed redirect URLs. The app returns users to the origin where they started sign-in.
+3. Set Supabase Auth's Site URL to `HOSTED_PREVIEW_URL_REMOVED and add that exact origin to allowed redirect URLs. Start hosted sign-in from this canonical website link so the OAuth callback returns to it.
 4. If the Google consent screen is in Testing mode, add the tester's Google account to its test-user list. Test login and first-time account creation with a team controlled account.
 
 Google login can avoid verification email for Google-authenticated accounts. Email/password signup and password recovery still depend on hosted SMTP. The current OAuth button is for the web app; native Capacitor OAuth needs a separate browser and deep-link flow before it is enabled in mobile builds.
