@@ -321,6 +321,15 @@ export async function listMyNotifications() {
   return (data ?? []) as UserNotification[]
 }
 
+export async function getUnreadNotificationCount() {
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .is('read_at', null)
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function markNotificationRead(notificationId: string) {
   const { error } = await supabase
     .from('notifications')
