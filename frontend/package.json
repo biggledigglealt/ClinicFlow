@@ -13,25 +13,25 @@
     "cap:open:ios": "cap open ios"
   },
   "dependencies": {
-    "@capacitor/android": "^8.6.0",
+    "@capacitor/android": "^8.6.2",
     "@capacitor/app": "^8.1.2",
-    "@capacitor/core": "^8.6.0",
-    "@capacitor/ios": "^8.6.0",
-    "@supabase/supabase-js": "^2.118.0",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2",
+    "@supabase/supabase-js": "^2.119.2",
     "leaflet": "^1.9.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.6.0",
+    "@capacitor/cli": "^8.6.2",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
-    "oxlint": "^1.88.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "oxlint": "^1.94.0",
     "typescript": "~6.0.3",
-    "vite": "^8.3.4"
+    "vite": "^8.3.8"
   },
   "overrides": {
     "glob": "^14.0.3",
