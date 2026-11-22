@@ -185,6 +185,7 @@ export function CalendarPage({
     `${slot.staff_id}:${slot.start_at}` === selectedSlotKey
     && !patientAppointmentConflict(slot, visibleAppointments),
   ) ?? null
+  const availableSlotCount = slots.filter((slot) => !patientAppointmentConflict(slot, visibleAppointments)).length
   const dayAppointments = visibleAppointments.filter((appointment) =>
     dateInTimeZoneForValue(appointment.start_at, appointmentTimeZone(appointment)) === selectedDate,
   )
@@ -661,12 +662,20 @@ export function CalendarPage({
           </button>
           <h2 id="calendar-day-title">{formatLongDate(selectedDate, language)}</h2>
           {reschedulingId ? (
-            <div className="calendar-reschedule-prompt" role="status">
-              <p>
-                {reschedulingAppointment
-                  ? `${t('Rescheduling appointment')}: ${appointmentClinicName(reschedulingAppointment)} · ${formatLongDate(dateInTimeZoneForValue(reschedulingAppointment.start_at, appointmentTimeZone(reschedulingAppointment)), language)} · ${formatClock(reschedulingAppointment.start_at, appointmentTimeZone(reschedulingAppointment), language)}`
-                  : t('Choose an available time below.')}
-              </p>
+            <div className="calendar-reschedule-prompt" role="group" aria-label={t('Rescheduling appointment')}>
+              <div className="calendar-reschedule-copy">
+                <strong>{t('Rescheduling appointment')}</strong>
+                {reschedulingAppointment ? (
+                  <>
+                    <span>{appointmentClinicName(reschedulingAppointment)}</span>
+                    <small>
+                      {formatLongDate(dateInTimeZoneForValue(reschedulingAppointment.start_at, appointmentTimeZone(reschedulingAppointment)), language)}
+                      {' · '}
+                      {formatClock(reschedulingAppointment.start_at, appointmentTimeZone(reschedulingAppointment), language)}
+                    </small>
+                  </>
+                ) : <span>{t('Choose an available time below.')}</span>}
+              </div>
               <button type="button" className="text-button" disabled={busy} onClick={cancelRescheduling}>{t('Cancel rescheduling')}</button>
             </div>
           ) : <p>{t('Available times are shown for this date.')}</p>}
@@ -715,57 +724,21 @@ export function CalendarPage({
         {!selectedClinic && !isLoadingClinics && <p className="section-description">{t('No clinics are available.')}</p>}
         {isLoadingClinics && <p className="section-description" role="status">{t('Loading clinics…')}</p>}
 
-        {!userId && (
-          <div className="calendar-access-prompt">
-            <p>{t('Sign in to book an appointment. You can view available times before signing in.')}</p>
-            <button type="button" className="primary-button" onClick={onLoginRequest}>{t('Log in to book')}</button>
-          </div>
-        )}
-        {userId && !hasPatientProfile && (
-          <div className="calendar-access-prompt">
-            <p>{t('Complete your booking profile to book an appointment. Available times are shown below.')}</p>
-            <button type="button" className="primary-button" onClick={onOpenProfile}>{t('Complete booking profile')}</button>
-          </div>
-        )}
-
-        {userId && hasPatientProfile && (
-            <section className="calendar-day-appointments" aria-labelledby="calendar-appointments-title">
-              <h3 id="calendar-appointments-title">{t('Your appointments on this date')}</h3>
-              {dayAppointments.length === 0 ? (
-                <p className="calendar-no-times">{t('No appointments for this date.')}</p>
-              ) : (
-                <ul className="calendar-day-appointment-list">
-                  {dayAppointments.map((appointment) => {
-                    const timeZone = appointmentTimeZone(appointment)
-                    const providerName = [appointment.staff?.first_name, appointment.staff?.last_name]
-                      .filter(Boolean)
-                      .join(' ')
-                    return (
-                      <li className="calendar-day-appointment" key={appointment.id}>
-                        <div className="calendar-day-appointment-info">
-                          <strong>{formatClock(appointment.start_at, timeZone, language)}</strong>
-                          <span>{appointmentClinicName(appointment)}</span>
-                          {providerName && <small>{providerName}</small>}
-                        </div>
-                        <div className="calendar-time-actions">
-                          <button type="button" className="text-button" disabled={busy}
-                            onClick={() => beginRescheduling(appointment)}>{t('Reschedule')}</button>
-                          <button type="button" className="text-button" disabled={busy}
-                            onClick={() => void cancelAppointment(appointment.id)}>{t('Cancel')}</button>
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </section>
-        )}
-
         {selectedClinic ? (
               <section className="calendar-availability" aria-labelledby="calendar-availability-title">
                 <div className="calendar-availability-heading">
-                  <h3 id="calendar-availability-title">{t('Available appointment times')}</h3>
-                  <p>{selectedClinic.name}</p>
+                  <div>
+                    <h3 id="calendar-availability-title">{t('Available appointment times')}</h3>
+                    <p>{selectedClinic.name}</p>
+                  </div>
+                  {!isLoadingDay && slots.length > 0 && (
+                    <span className="calendar-availability-count" role="status">
+                      {availableSlotCount}{' '}
+                      {t(availableSlotCount === 1
+                        ? 'available appointment time'
+                        : 'available appointment times')}
+                    </span>
+                  )}
                 </div>
                 {isLoadingDay && <p className="section-description" role="status">{t('Loading availability…')}</p>}
                 {!isLoadingDay && slots.length === 0 && !error && (
@@ -801,6 +774,7 @@ export function CalendarPage({
                             <button type="button" key={slotKey}
                               className={'calendar-time-card is-available'
                                 + (selectedSlotKey === slotKey ? ' is-slot-selected' : '')}
+                              aria-label={`${formatClock(slot.start_at, selectedClinic.time_zone, language)}. ${t('Available appointment time')}. ${t(reschedulingId ? 'Select to reschedule' : 'Select time')}`}
                               aria-pressed={selectedSlotKey === slotKey}
                               onClick={() => {
                                 setSelectedSlotKey(slotKey)
@@ -810,7 +784,7 @@ export function CalendarPage({
                               <strong>{formatClock(slot.start_at, selectedClinic.time_zone, language)}</strong>
                               <span>{selectedSlotKey === slotKey
                                 ? t('Selected')
-                                : t(reschedulingId ? 'Select to reschedule' : 'Select time')}</span>
+                                : t('Available')}</span>
                             </button>
                           )
                         })}
@@ -822,6 +796,52 @@ export function CalendarPage({
             ) : !isLoadingClinics && (
               <p className="calendar-no-times">{t('Select a clinic to check appointment times.')}</p>
             )}
+
+        {!userId && (
+          <div className="calendar-access-prompt">
+            <p>{t('Sign in to book an appointment. You can view available times before signing in.')}</p>
+            <button type="button" className="primary-button" onClick={onLoginRequest}>{t('Log in to book')}</button>
+          </div>
+        )}
+        {userId && !hasPatientProfile && (
+          <div className="calendar-access-prompt">
+            <p>{t('Complete your booking profile to book an appointment. Available times are shown below.')}</p>
+            <button type="button" className="primary-button" onClick={onOpenProfile}>{t('Complete booking profile')}</button>
+          </div>
+        )}
+
+        {userId && hasPatientProfile && (
+          <section className="calendar-day-appointments" aria-labelledby="calendar-appointments-title">
+            <h3 id="calendar-appointments-title">{t('Your appointments on this date')}</h3>
+            {dayAppointments.length === 0 ? (
+              <p className="calendar-no-times">{t('No appointments for this date.')}</p>
+            ) : (
+              <ul className="calendar-day-appointment-list">
+                {dayAppointments.map((appointment) => {
+                  const timeZone = appointmentTimeZone(appointment)
+                  const providerName = [appointment.staff?.first_name, appointment.staff?.last_name]
+                    .filter(Boolean)
+                    .join(' ')
+                  return (
+                    <li className="calendar-day-appointment" key={appointment.id}>
+                      <div className="calendar-day-appointment-info">
+                        <strong>{formatClock(appointment.start_at, timeZone, language)}</strong>
+                        <span>{appointmentClinicName(appointment)}</span>
+                        {providerName && <small>{providerName}</small>}
+                      </div>
+                      <div className="calendar-time-actions">
+                        <button type="button" className="text-button" disabled={busy}
+                          onClick={() => beginRescheduling(appointment)}>{t('Reschedule')}</button>
+                        <button type="button" className="text-button" disabled={busy}
+                          onClick={() => void cancelAppointment(appointment.id)}>{t('Cancel')}</button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+        )}
       </aside>
       </section>
       )}

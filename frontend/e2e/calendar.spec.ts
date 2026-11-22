@@ -5,7 +5,7 @@ const clinicAId = '40000000-0000-4000-8000-000000000001'
 const clinicBId = '40000000-0000-4000-8000-000000000002'
 const staffId = '20000000-0000-4000-8000-000000000001'
 const appointmentId = '50000000-0000-4000-8000-000000000001'
-const appointmentDate = '2030-01-15'
+const appointmentDate = '2030-12-29'
 const oldStart = `${appointmentDate}T15:00:00.000Z`
 const newStart = `${appointmentDate}T17:00:00.000Z`
 
@@ -95,7 +95,7 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
     id: appointmentId,
     clinic_id: clinicBId,
     start_at: oldStart,
-    end_at: '2030-01-15T15:30:00.000Z',
+    end_at: `${appointmentDate}T15:30:00.000Z`,
     status: 'booked',
   }]
   const calls = { book: 0, reschedule: 0, cancel: 0 }
@@ -194,7 +194,7 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
               staff_last_name: 'Reed',
               staff_job_title: 'Nurse practitioner',
               start_at: newStart,
-              end_at: '2030-01-15T17:30:00.000Z',
+              end_at: `${appointmentDate}T17:30:00.000Z`,
             }]
           : []
         await respond(route, slots)
@@ -286,11 +286,22 @@ test('guest can see a clinic calendar and book after signing in', async ({ page 
   await expect(calendar).toBeInViewport({ ratio: 0.1 })
   await expect(calendar.locator('.calendar-clinic-context')).toContainText('Beta Health Clinic')
   await page.getByLabel('Select date').fill(appointmentDate)
-  await expect(page.getByRole('gridcell', { name: /January 15, 1 available appointment time/ })).toBeVisible()
+  await expect(page.getByRole('gridcell', { name: /December 29, 1 available appointment time/ })).toBeVisible()
 
-  await page.getByRole('gridcell', { name: /January 15, 1 available appointment time/ }).click()
+  await page.getByRole('gridcell', { name: /December 29, 1 available appointment time/ }).click()
+  const availability = calendar.locator('.calendar-availability')
+  await expect(availability).toContainText('1 available appointment time')
+  const availabilityPrecedesAccessPrompt = await calendar.evaluate((element) => {
+    const availableSection = element.querySelector('.calendar-availability')
+    const accessPrompt = element.querySelector('.calendar-access-prompt')
+    return Boolean(availableSection && accessPrompt
+      && (availableSection.compareDocumentPosition(accessPrompt) & Node.DOCUMENT_POSITION_FOLLOWING))
+  })
+  expect(availabilityPrecedesAccessPrompt).toBe(true)
   const slot = page.locator('.calendar-time-card.is-available').first()
   await expect(slot).toContainText('12:00')
+  await expect(slot).toContainText('Available')
+  await expect(slot).toBeInViewport()
   await slot.click()
   await page.getByRole('button', { name: 'Log in to book', exact: true }).last().click()
 
@@ -314,12 +325,20 @@ test('patient can find and reschedule an appointment at another clinic', async (
   await page.locator('.calendar-section-switch').getByRole('button', { name: /My upcoming appointments/ }).click()
   const appointmentSummary = page.locator('.calendar-appointment-summary').first()
   await expect(appointmentSummary).toContainText('Beta Health Clinic')
-  await expect(appointmentSummary).toContainText('Tuesday, January 15')
+  await expect(appointmentSummary).toContainText('Sunday, December 29')
   await appointmentSummary.click()
   await expect(page.getByRole('button', { name: 'Reschedule', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Reschedule', exact: true }).click()
 
-  await expect(page.locator('.calendar-reschedule-prompt')).toContainText('Beta Health Clinic')
+  const reschedulePrompt = page.locator('.calendar-reschedule-prompt')
+  await expect(reschedulePrompt).toContainText('Beta Health Clinic')
+  await expect(reschedulePrompt).toContainText('Sunday, December 29')
+  const promptBox = await reschedulePrompt.boundingBox()
+  expect(promptBox?.height).toBeLessThan(160)
+  const compactDayCell = page.locator('.calendar-grid-day .calendar-date-cell')
+  await expect(compactDayCell).toBeVisible()
+  const dayCellBox = await compactDayCell.boundingBox()
+  expect(dayCellBox?.height).toBeLessThan(160)
   const availableSlot = page.locator('.calendar-time-card.is-available').first()
   await expect(availableSlot).toBeVisible()
   await availableSlot.click()
@@ -327,6 +346,7 @@ test('patient can find and reschedule an appointment at another clinic', async (
 
   await expect(page.getByRole('status').filter({ hasText: 'Your appointment has been rescheduled.' })).toBeVisible()
   await expect(page.locator('.calendar-appointment-summary').first()).toContainText('Beta Health Clinic')
+  await expect(page.locator('.calendar-appointment-summary').first()).toContainText('Sunday, December 29')
   await expect(page.locator('.calendar-appointment-summary').first()).toContainText('12:00')
   expect(backend.calls.reschedule).toBe(1)
 
@@ -339,10 +359,19 @@ test('patient can find and reschedule an appointment at another clinic', async (
 test('selecting a date brings the cross-clinic agenda into view on mobile', async ({ page }) => {
   await signInAsPatient(page)
   await navigateThroughMainMenu(page, 'Calendar')
+  const clinicSelect = page.locator('#calendar-clinic')
+  await expect(clinicSelect).toBeEnabled()
+  await clinicSelect.selectOption(clinicBId)
   await page.getByLabel('Select date').fill(appointmentDate)
-  await page.getByRole('gridcell', { name: /January 15/ }).click()
+  await page.getByRole('gridcell', { name: /December 29/ }).click()
 
   const dayAgenda = page.locator('.calendar-detail-panel')
+  const availability = dayAgenda.locator('.calendar-availability')
+  await expect(availability).toContainText('Beta Health Clinic')
+  await expect(availability).toContainText('1 available appointment time')
+  const availableSlot = availability.locator('.calendar-time-card.is-available').first()
+  await expect(availableSlot).toBeVisible()
+  await expect(availableSlot).toContainText('Available')
   await expect(dayAgenda).toContainText('Beta Health Clinic')
   await expect(dayAgenda).toContainText('10:00')
   await expect(dayAgenda.getByRole('button', { name: 'Reschedule', exact: true })).toBeVisible()

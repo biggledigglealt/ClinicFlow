@@ -923,6 +923,8 @@
 .high-contrast .side-rail,
 .high-contrast .hero-panel,
 .high-contrast .clinic-card,
+.high-contrast .calendar-availability,
+.high-contrast .calendar-reschedule-prompt,
 .high-contrast .appointment-slot,
 .high-contrast .notification-list li,
 .high-contrast .staff-appointment-list li {
@@ -930,6 +932,14 @@
   color: #000;
   background: #fff;
   box-shadow: none;
+}
+
+.high-contrast .calendar-availability-count,
+.high-contrast .calendar-time-card,
+.high-contrast .calendar-reschedule-prompt .text-button {
+  border: 2px solid #000;
+  color: #000;
+  background: #fff;
 }
 
 .high-contrast p,
@@ -1979,7 +1989,7 @@
 }
 
 .calendar-grid-day .calendar-date-cell {
-  min-height: 360px;
+  min-height: 120px;
   padding: 14px;
 }
 
@@ -2025,26 +2035,39 @@
 }
 
 .calendar-reschedule-prompt {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 8px 12px;
   margin-top: 8px;
-  padding: 10px 12px;
+  padding: 9px 10px;
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   color: #1e3a8a;
   background: #eff6ff;
 }
 
-.calendar-reschedule-prompt p {
-  margin: 0;
-  font-size: 0.8rem;
+.calendar-reschedule-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.calendar-reschedule-copy strong {
+  font-size: 0.76rem;
+}
+
+.calendar-reschedule-copy span,
+.calendar-reschedule-copy small {
+  overflow-wrap: anywhere;
+  color: #334e7e;
+  font-size: 0.74rem;
 }
 
 .calendar-reschedule-prompt .text-button {
-  padding: 0;
+  min-height: 40px;
+  padding: 0 7px;
+  font-size: 0.74rem;
 }
 
 .calendar-my-appointments {
@@ -2101,6 +2124,35 @@
 .calendar-availability {
   display: grid;
   gap: 8px;
+  padding: 12px;
+  border: 1px solid #b8efcf;
+  border-radius: 14px;
+  background: #f3fcf6;
+}
+
+.calendar-availability-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.calendar-availability-heading > div {
+  min-width: 0;
+}
+
+.calendar-availability-count {
+  flex: 0 0 auto;
+  max-width: 48%;
+  padding: 5px 8px;
+  border: 1px solid #9edbb8;
+  border-radius: 999px;
+  color: #14532d;
+  background: #dcfce7;
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .calendar-availability-heading h3 {
@@ -2711,6 +2763,54 @@ button.calendar-time-card:focus-visible {
     padding: 14px 12px;
   }
 
+  .calendar-reschedule-prompt {
+    align-items: start;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .calendar-reschedule-prompt .text-button {
+    max-width: 112px;
+    white-space: normal;
+  }
+
+  .calendar-availability {
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .calendar-availability-heading {
+    align-items: flex-start;
+  }
+
+  .calendar-availability-count {
+    max-width: 44%;
+    padding: 5px 7px;
+  }
+
+  .calendar-availability .calendar-time-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .calendar-availability .calendar-time-card {
+    min-height: 62px;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .calendar-availability .calendar-time-card strong {
+    font-size: 0.95rem;
+  }
+
+  .calendar-availability .calendar-time-card > span {
+    overflow-wrap: anywhere;
+    font-size: 0.68rem;
+    text-align: left;
+  }
+
   .calendar-booking-action {
     top: auto;
     bottom: calc(68px + env(safe-area-inset-bottom));
@@ -2736,7 +2836,8 @@ button.calendar-time-card:focus-visible {
   }
 
   .calendar-grid-day .calendar-date-cell {
-    min-height: 280px;
+    min-height: 104px;
+    padding: 10px;
   }
 
   .clinic-map-canvas {

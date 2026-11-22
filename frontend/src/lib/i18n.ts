@@ -234,6 +234,8 @@ const french: Record<string, string> = Object.fromEntries([
   ['Times available', 'Heures disponibles'],
   ['available appointment time', 'heure de rendez-vous disponible'],
   ['available appointment times', 'heures de rendez-vous disponibles'],
+  ['Available appointment time', 'Heure de rendez-vous disponible'],
+  ['Available', 'Disponible'],
   ['Calendar view', 'Affichage du calendrier'],
   ['Month', 'Mois'],
   ['Week', 'Semaine'],
