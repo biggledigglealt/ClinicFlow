@@ -183,6 +183,17 @@
   background: var(--color-brand-soft);
 }
 
+.rail-link.booking-nav-link {
+  color: #fff;
+  background: #1d4ed8;
+}
+
+.rail-link.booking-nav-link:hover,
+.rail-link.booking-nav-link:focus-visible {
+  color: #fff;
+  background: #1e40af;
+}
+
 .section-icon {
   width: 21px;
   height: 21px;
@@ -430,6 +441,36 @@
 .auth-panel {
   max-width: 560px;
   margin: 0 auto 20px;
+}
+
+.auth-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth-panel-header h3 {
+  min-width: 0;
+}
+
+.auth-mode-button {
+  min-height: 44px;
+  flex: 0 0 auto;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #93b7ff;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-mode-button:hover,
+.auth-mode-button:focus-visible {
+  border-color: #2563eb;
+  background: #eff6ff;
 }
 
 .auth-form {
@@ -704,6 +745,10 @@
 .clinic-booking-flow {
   display: grid;
   gap: 20px;
+}
+
+#clinic-search {
+  scroll-margin-top: 16px;
 }
 
 .panel {
@@ -1329,6 +1374,23 @@
   margin-top: 18px;
 }
 
+.appointment-reschedule-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.appointment-reschedule-prompt p {
+  margin: 0;
+}
+
 .appointment-slots h4,
 .upcoming-appointments h4 {
   margin: 0;
@@ -1418,14 +1480,8 @@
 }
 
 .app-shell.calendar-active {
-  max-width: 1080px;
   min-height: 100vh;
   background: linear-gradient(135deg, #edf4ff 0%, #f7faff 55%, #eef5ff 100%);
-}
-
-.calendar-active .app-layout {
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 18px;
 }
 
 .calendar-active .side-rail {
@@ -1743,6 +1799,29 @@
   margin-bottom: 14px;
 }
 
+.calendar-reschedule-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  color: #1e3a8a;
+  background: #eff6ff;
+}
+
+.calendar-reschedule-prompt p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.calendar-reschedule-prompt .text-button {
+  padding: 0;
+}
+
 .calendar-my-appointments {
   display: inline-flex;
   align-items: center;
@@ -2043,6 +2122,7 @@ button.calendar-time-card:focus-visible {
 
   .mobile-nav-link {
     display: grid;
+    min-width: 0;
     min-height: 52px;
     align-content: center;
     justify-items: center;
@@ -2052,7 +2132,7 @@ button.calendar-time-card:focus-visible {
     color: #64748b;
     background: transparent;
     font: inherit;
-    font-size: 0.75rem;
+    font-size: clamp(0.65rem, 2.4vw, 0.75rem);
     font-weight: 700;
   }
 
@@ -2064,6 +2144,10 @@ button.calendar-time-card:focus-visible {
   .mobile-nav-link[aria-current="page"] {
     color: #1d4ed8;
     background: #eff6ff;
+  }
+
+  .mobile-nav-link.booking-nav-link {
+    color: #1d4ed8;
   }
 
   .clinic-booking-flow,
@@ -2175,7 +2259,16 @@ button.calendar-time-card:focus-visible {
 
 @media (max-width: 700px) {
   .mobile-bottom-navigation {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .auth-panel-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .auth-mode-button {
+    margin-left: auto;
   }
 
   .calendar-workspace {
