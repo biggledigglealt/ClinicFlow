@@ -306,6 +306,27 @@ export function CalendarPage({
     }
   }
 
+  function beginRescheduling(appointment: PatientAppointment) {
+    const clinic = clinics.find((item) => item.id === appointment.clinic_id)
+    if (!clinic) return
+
+    setSelectedClinicId(clinic.id)
+    if (selectedClinic?.id !== clinic.id) onClinicChange(clinic)
+    setSelectedDate(dateInTimeZoneForValue(appointment.start_at, clinic.time_zone))
+    setView('day')
+    setReschedulingId(appointment.id)
+    setSelectedSlotKey(null)
+    setError('')
+    setMessage('')
+  }
+
+  function cancelRescheduling() {
+    setReschedulingId(null)
+    setSelectedSlotKey(null)
+    setError('')
+    setMessage('')
+  }
+
   function goToMyAppointments() {
     const nextAppointment = visibleAppointments[0]
     if (!nextAppointment) return
@@ -407,7 +428,12 @@ export function CalendarPage({
             <span aria-hidden="true">‹</span> {t('My appointments')}
           </button>
           <h2 id="calendar-day-title">{formatLongDate(selectedDate, language)}</h2>
-          <p>{t('Choose an available time')}</p>
+          {reschedulingId ? (
+            <div className="calendar-reschedule-prompt" role="status">
+              <p>{t('Choose an available time to reschedule.')}</p>
+              <button type="button" className="text-button" disabled={busy} onClick={cancelRescheduling}>{t('Cancel rescheduling')}</button>
+            </div>
+          ) : <p>{t('Choose an available time')}</p>}
         </div>
 
         <label className="calendar-clinic-label" htmlFor="calendar-clinic">{t('Clinic')}</label>
@@ -475,7 +501,7 @@ export function CalendarPage({
                             <span>{t('Your appointment')}</span>
                             <div className="calendar-time-actions">
                               <button type="button" className="text-button" disabled={busy}
-                                onClick={() => { setReschedulingId(row.appointment.id); setSelectedSlotKey(null); setMessage(t('Choose an available time to reschedule.')) }}>
+                                onClick={() => beginRescheduling(row.appointment)}>
                                 {t('Reschedule')}
                               </button>
                               <button type="button" className="text-button" disabled={busy}
@@ -519,7 +545,7 @@ export function CalendarPage({
               <div className="calendar-booking-action">
                 {reschedulingId && <p>{t('Rescheduling appointment')}</p>}
                 <button type="button" className="primary-button" disabled={busy} onClick={() => void confirmSelection()}>
-                  {busy ? t('Booking…') : t(reschedulingId ? 'Confirm reschedule' : 'Confirm booking')}
+                  {busy ? t(reschedulingId ? 'Rescheduling…' : 'Booking…') : t(reschedulingId ? 'Confirm reschedule' : 'Confirm booking')}
                 </button>
               </div>
             )}

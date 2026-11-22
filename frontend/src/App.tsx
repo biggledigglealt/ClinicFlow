@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
@@ -79,7 +79,17 @@ function ClinicFlowApp() {
   const [appointmentsRefreshToken, setAppointmentsRefreshToken] = useState(0)
   const [activeSection, setActiveSection] = useState<AppSection>('home')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const authPanelRef = useRef<HTMLElement | null>(null)
   const t = (message: string) => translate(message, accessibilityPreferences.language)
+
+  useEffect(() => {
+    if (!showAuth || user) return
+
+    const scrollFrame = window.requestAnimationFrame(() => {
+      authPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    return () => window.cancelAnimationFrame(scrollFrame)
+  }, [showAuth, user])
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -297,12 +307,28 @@ function ClinicFlowApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  function navigateToBooking() {
+    setActiveSection('home')
+    setIsMobileMenuOpen(false)
+    window.requestAnimationFrame(() => {
+      document.getElementById('clinic-search')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
   function openLogin() {
     setAuthMode('login')
     setShowAuth(true)
     setAuthError('')
     setAuthMessage('')
     setIsMobileMenuOpen(false)
+  }
+
+  function setAuthModeWithReset(mode: 'login' | 'signup') {
+    setAuthMode(mode)
+    setAuthError('')
+    setAuthMessage('')
+    setCanResendVerification(false)
+    setVerificationEmail('')
   }
 
   const sectionTitle: Record<AppSection, string> = {
@@ -329,6 +355,7 @@ function ClinicFlowApp() {
           </div>
           <nav className="rail-navigation" aria-label={t('Main navigation')}>
             <button type="button" className="rail-link" aria-current={activeSection === 'home' ? 'page' : undefined} onClick={() => navigateTo('home')}><SectionIcon section="home" />{t('Home')}</button>
+            <button type="button" className="rail-link booking-nav-link" onClick={navigateToBooking}><SectionIcon section="calendar" />{t('Book appointment')}</button>
             <button type="button" className="rail-link" aria-current={activeSection === 'calendar' ? 'page' : undefined} onClick={() => navigateTo('calendar')}><SectionIcon section="calendar" />{t('Calendar')}</button>
             <button type="button" className="rail-link" aria-current={activeSection === 'settings' ? 'page' : undefined} onClick={() => navigateTo('settings')}><SectionIcon section="settings" />{t('Settings')}</button>
             <button type="button" className="rail-link" aria-current={activeSection === 'profile' ? 'page' : undefined} onClick={() => navigateTo('profile')}><SectionIcon section="profile" />{t('Profile')}</button>
@@ -360,11 +387,20 @@ function ClinicFlowApp() {
 
           <main id="main-content" className="main-content">
       {showAuth && !user && (
-        <section className="panel auth-panel" id="auth-panel" aria-labelledby="auth-title">
-          <div className="panel-header">
-          <h3 id="auth-title">
-            {t(authMode === 'login' ? 'Log in' : authMode === 'signup' ? 'Create an account' : 'Recover your password')}
-          </h3>
+        <section ref={authPanelRef} className="panel auth-panel" id="auth-panel" aria-labelledby="auth-title">
+          <div className="panel-header auth-panel-header">
+            <h3 id="auth-title">
+              {t(authMode === 'login' ? 'Log in' : authMode === 'signup' ? 'Create an account' : 'Recover your password')}
+            </h3>
+            {authMode === 'reset' ? (
+              <button type="button" className="auth-mode-button" onClick={() => setAuthModeWithReset('login')}>
+                {t('Return to log in')}
+              </button>
+            ) : (
+              <button type="button" className="auth-mode-button" onClick={() => setAuthModeWithReset(authMode === 'login' ? 'signup' : 'login')}>
+                {t(authMode === 'login' ? 'Sign up' : 'Log in')}
+              </button>
+            )}
           </div>
 
           <form className="auth-form" onSubmit={handleAuthSubmit}>
@@ -471,29 +507,20 @@ function ClinicFlowApp() {
             {authMode === 'reset' ? (
               <>
                 {t('Remember your password?')}{' '}
-                <button type="button" className="text-button" onClick={() => setAuthMode('login')}>
+                <button type="button" className="text-button" onClick={() => setAuthModeWithReset('login')}>
                   {t('Return to log in')}
                 </button>
               </>
             ) : (
               <>
                 {t(authMode === 'login' ? 'New to ClinicFlow?' : 'Already have an account?')}{' '}
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => {
-                    setAuthMode((mode) => mode === 'login' ? 'signup' : 'login')
-                    setAuthError('')
-                    setAuthMessage('')
-                    setCanResendVerification(false)
-                    setVerificationEmail('')
-                  }}
-                >
+                <button type="button" className="text-button" onClick={() => setAuthModeWithReset(authMode === 'login' ? 'signup' : 'login')}>
                   {t(authMode === 'login' ? 'Create an account' : 'Log in')}
                 </button>
               </>
             )}
           </p>
+
         </section>
       )}
 
@@ -585,6 +612,7 @@ function ClinicFlowApp() {
 
       <nav className="mobile-bottom-navigation" aria-label="Main navigation">
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'home' ? 'page' : undefined} onClick={() => navigateTo('home')}><SectionIcon section="home" />{t('Home')}</button>
+        <button type="button" className="mobile-nav-link booking-nav-link" aria-label={t('Book appointment')} onClick={navigateToBooking}><SectionIcon section="calendar" />{t('Book')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'calendar' ? 'page' : undefined} onClick={() => navigateTo('calendar')}><SectionIcon section="calendar" />{t('Calendar')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'profile' ? 'page' : undefined} onClick={() => navigateTo('profile')}><SectionIcon section="profile" />{t('Profile')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'settings' ? 'page' : undefined} onClick={() => navigateTo('settings')}><SectionIcon section="settings" />{t('Settings')}</button>
