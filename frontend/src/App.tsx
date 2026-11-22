@@ -312,6 +312,16 @@ function ClinicFlowApp() {
     }
   }
 
+  function handleClinicFinderSelection(clinic: Clinic) {
+    setSelectedClinic(clinic)
+    const behavior: ScrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth'
+    window.requestAnimationFrame(() => {
+      document.getElementById('clinic-booking-calendar')?.scrollIntoView({ behavior, block: 'start' })
+    })
+  }
+
   async function handleLogout() {
     setAuthError('')
     setAuthMessage('')
@@ -554,12 +564,10 @@ function ClinicFlowApp() {
               <>
                 <section className="hero-panel">
                   <div><p className="eyebrow">{t('Patient appointment flow')}</p><h2>{t('Find a clinic and book an appointment')}</h2><p className="hero-description">{t('Search local clinics, compare availability, and manage upcoming bookings.')}</p></div>
-                  <span className="status-pill">{t('Current prototype')}</span>
                 </section>
                 <div className="clinic-booking-flow" id="clinic-search">
-                  <ClinicFinder selectedClinicId={selectedClinic?.id ?? null} onSelectClinic={setSelectedClinic} />
+                  <ClinicFinder selectedClinicId={selectedClinic?.id ?? null} onSelectClinic={handleClinicFinderSelection} />
                   <CalendarPage
-                    key={user?.id ?? 'guest'}
                     preferredClinicId={selectedClinic?.id ?? null}
                     userId={user?.id ?? null}
                     hasPatientProfile={hasPatientProfile}
@@ -584,7 +592,6 @@ function ClinicFlowApp() {
 
             {activeSection === 'calendar' && (
               <CalendarPage
-                key={user?.id ?? 'guest'}
                 preferredClinicId={selectedClinic?.id ?? null}
                 userId={user?.id ?? null}
                 hasPatientProfile={hasPatientProfile}
@@ -597,8 +604,8 @@ function ClinicFlowApp() {
 
             {user && (
               <div className="settings-page-grid" hidden={activeSection !== 'profile'}>
-                <PatientProfilePanel key={user.id} userId={user.id} onProfileReady={setHasPatientProfile} />
-                {user.email && <AccountSecurityPanel key={user.id} email={user.email} recoveryMode={isPasswordRecovery} onRecoveryComplete={() => setIsPasswordRecovery(false)} />}
+                <PatientProfilePanel key={'profile:' + user.id} userId={user.id} onProfileReady={setHasPatientProfile} />
+                {user.email && <AccountSecurityPanel key={'security:' + user.id} email={user.email} recoveryMode={isPasswordRecovery} onRecoveryComplete={() => setIsPasswordRecovery(false)} />}
               </div>
             )}
             {activeSection === 'profile' && !user && (

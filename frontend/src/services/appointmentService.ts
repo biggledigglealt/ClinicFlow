@@ -9,6 +9,11 @@ export interface AppointmentSlot {
   end_at: string
 }
 
+export interface AvailableDay {
+  available_date: string
+  available_slots: number
+}
+
 export interface PatientAppointment {
   id: string
   clinic_id: string
@@ -28,6 +33,18 @@ export async function getAvailableSlots(clinicId: string, date: string) {
   if (error) throw error
 
   return (data ?? []) as AppointmentSlot[]
+}
+
+export async function getAvailableDays(clinicId: string, startDate: string, endDate: string) {
+  const { data, error } = await supabase.rpc('available_appointment_days', {
+    p_clinic_id: clinicId,
+    p_start_date: startDate,
+    p_end_date: endDate,
+  })
+
+  if (error) throw error
+
+  return (data ?? []) as AvailableDay[]
 }
 
 export async function bookAppointment(
