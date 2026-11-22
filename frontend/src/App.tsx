@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { App as CapacitorApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
@@ -54,6 +54,22 @@ function restoreSelectedClinic(): Clinic | null {
   }
 }
 
+function patientNameHints(user: User | null) {
+  const metadata = user?.user_metadata ?? {}
+  const fullName = typeof metadata.full_name === 'string'
+    ? metadata.full_name
+    : typeof metadata.name === 'string' ? metadata.name : ''
+  const [firstPart = '', ...lastParts] = fullName.trim().split(/\s+/)
+  return {
+    firstName: typeof metadata.given_name === 'string'
+      ? metadata.given_name
+      : typeof metadata.first_name === 'string' ? metadata.first_name : firstPart,
+    lastName: typeof metadata.family_name === 'string'
+      ? metadata.family_name
+      : typeof metadata.last_name === 'string' ? metadata.last_name : lastParts.join(' '),
+  }
+}
+
 function BellIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="ui-icon"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
 }
@@ -79,6 +95,7 @@ function SectionIcon({ section }: { section: AppSection | 'clinicFinder' }) {
 
 function ClinicFlowApp() {
   const [user, setUser] = useState<User | null>(null)
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false)
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'reset'>('login')
@@ -92,14 +109,24 @@ function ClinicFlowApp() {
   const [isResendingVerification, setIsResendingVerification] = useState(false)
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(() => restoreSelectedClinic())
   const [hasPatientProfile, setHasPatientProfile] = useState(false)
+  const [isPatientProfileChecked, setIsPatientProfileChecked] = useState(false)
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const [accessibilityPreferences, setAccessibilityPreferences] = useState<AccessibilityPreferences>(defaultAccessibilityPreferences)
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [appointmentsRefreshToken, setAppointmentsRefreshToken] = useState(0)
+  const [calendarPageSection, setCalendarPageSection] = useState<'calendar' | 'appointments'>('calendar')
   const [activeSection, setActiveSection] = useState<AppSection>('home')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const authPanelRef = useRef<HTMLElement | null>(null)
+  const activeUserIdRef = useRef<string | null>(null)
   const t = (message: string) => translate(message, accessibilityPreferences.language)
+  const isAuthGated = !isAuthInitialized || !user
+  const isPatientProfileCheckPending = Boolean(user && !isPatientProfileChecked)
+  const isBookingProfileSetupRequired = Boolean(
+    user && isPatientProfileChecked && !hasPatientProfile && !isPasswordRecovery,
+  )
+  const isBookingSetupGated = isAuthGated || isPatientProfileCheckPending || isBookingProfileSetupRequired
+  const nameHints = patientNameHints(user)
 
   useEffect(() => {
     try {
@@ -125,10 +152,17 @@ function ClinicFlowApp() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user ?? null)
+        const sessionUser = session?.user ?? null
+        const sessionUserId = sessionUser?.id ?? null
+        if (activeUserIdRef.current !== sessionUserId) {
+          activeUserIdRef.current = sessionUserId
+          setHasPatientProfile(false)
+          setIsPatientProfileChecked(false)
+        }
+        setUser(sessionUser)
+        setIsAuthInitialized(true)
         if (!session) {
           setIsPlatformAdmin(false)
-          setHasPatientProfile(false)
           setUnreadNotificationCount(0)
           setAccessibilityPreferences(defaultAccessibilityPreferences)
           setActiveSection('home')
@@ -143,6 +177,12 @@ function ClinicFlowApp() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  const handlePatientProfileReady = useCallback((ready: boolean) => {
+    setHasPatientProfile(ready)
+    setIsPatientProfileChecked(true)
+    if (!ready && !isPasswordRecovery) setActiveSection('profile')
+  }, [isPasswordRecovery])
 
   useEffect(() => {
     const userId = user?.id
@@ -201,7 +241,14 @@ function ClinicFlowApp() {
 
       try {
         const callbackUrl = new URL(url)
-        if (callbackUrl.protocol !== 'ca.uottawa.clinicflow:') return
+        if (
+          callbackUrl.protocol !== 'ca.uottawa.clinicflow:'
+          || callbackUrl.hostname !== 'auth-callback'
+          || (callbackUrl.pathname !== '' && callbackUrl.pathname !== '/')
+          || callbackUrl.username !== ''
+          || callbackUrl.password !== ''
+          || callbackUrl.port !== ''
+        ) return
         const callbackParams = new URLSearchParams(callbackUrl.hash.slice(1))
         const callbackError = callbackUrl.searchParams.get('error_description')
           ?? callbackParams.get('error_description')
@@ -285,9 +332,12 @@ function ClinicFlowApp() {
         const signupEmail = email.trim()
         const { user: createdUser, session } = await register(signupEmail, password)
 
-        if (session) {
+        if (session && createdUser) {
+          activeUserIdRef.current = createdUser.id
+          setHasPatientProfile(false)
+          setIsPatientProfileChecked(false)
           setUser(createdUser)
-          setAuthMessage(t('Your account is ready.'))
+          setActiveSection('profile')
           setShowAuth(false)
         } else {
           setVerificationEmail(signupEmail)
@@ -366,17 +416,37 @@ function ClinicFlowApp() {
   }
 
   function navigateTo(section: AppSection) {
+    if (user && isPatientProfileChecked && !hasPatientProfile && !isPasswordRecovery
+      && section !== 'profile') {
+      setActiveSection('profile')
+      setIsMobileMenuOpen(false)
+      return
+    }
+    if (section === 'calendar') setCalendarPageSection('calendar')
     setActiveSection(section)
     setIsMobileMenuOpen(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function navigateToBooking() {
+    if (user && isPatientProfileChecked && !hasPatientProfile && !isPasswordRecovery) {
+      setActiveSection('profile')
+      setIsMobileMenuOpen(false)
+      return
+    }
+    setCalendarPageSection('calendar')
     setActiveSection('home')
     setIsMobileMenuOpen(false)
     window.requestAnimationFrame(() => {
       document.getElementById('clinic-search')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
+  }
+
+  function openAppointments() {
+    setCalendarPageSection('appointments')
+    setActiveSection('calendar')
+    setIsMobileMenuOpen(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function openLogin() {
@@ -404,10 +474,28 @@ function ClinicFlowApp() {
     help: 'Help and contact',
     staff_access: 'Staff access',
   }
+  const topbarTitle = isAuthGated
+    ? 'Sign in to book'
+    : isBookingProfileSetupRequired
+      ? 'Complete your booking profile'
+      : isPatientProfileCheckPending
+        ? 'Preparing your booking'
+        : sectionTitle[activeSection]
+
+  function handleFirstProfileComplete() {
+    setHasPatientProfile(true)
+    setIsPatientProfileChecked(true)
+    setAuthMessage('')
+    setActiveSection('home')
+    setShowAuth(false)
+    window.requestAnimationFrame(() => {
+      document.getElementById('clinic-search')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
 
   return (
     <LanguageProvider language={accessibilityPreferences.language}>
-    <div className={"app-shell text-size-" + accessibilityPreferences.text_size + (accessibilityPreferences.high_contrast ? " high-contrast" : "") + (activeSection === 'calendar' ? " calendar-active" : "")}>
+    <div className={"app-shell text-size-" + accessibilityPreferences.text_size + (accessibilityPreferences.high_contrast ? " high-contrast" : "") + (activeSection === 'calendar' ? " calendar-active" : "") + (isAuthGated ? " auth-gated" : "") + (isBookingProfileSetupRequired ? " profile-setup-gated" : "") + (isPatientProfileCheckPending ? " profile-check-pending" : "")}>
       <a className="skip-link" href="#main-content">{t('Skip to content')}</a>
       {isMobileMenuOpen && <button type="button" className="navigation-scrim" aria-label={t('Close navigation menu')} onClick={() => setIsMobileMenuOpen(false)} />}
 
@@ -435,22 +523,41 @@ function ClinicFlowApp() {
 
         <div className="app-main">
           <header className="topbar">
-            <div className="topbar-heading"><p className="eyebrow">ClinicFlow</p><h1>{t(sectionTitle[activeSection])}</h1></div>
+            <div className="topbar-heading"><p className="eyebrow">ClinicFlow</p><h1>{t(topbarTitle)}</h1></div>
             <div className="topbar-actions">
-              <button type="button" className="icon-button mobile-menu-trigger" aria-label={t(isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu')} aria-expanded={isMobileMenuOpen} aria-controls="mobile-navigation" onClick={() => setIsMobileMenuOpen((open) => !open)}><MenuIcon /></button>
-              <button type="button" className="icon-button notification-trigger" aria-label={t('Notifications') + ', ' + unreadNotificationCount + ' ' + (accessibilityPreferences.language === 'fr' ? 'non lues' : 'unread')} onClick={() => navigateTo('notifications')}>
+              {user && !isBookingSetupGated && <button type="button" className="icon-button mobile-menu-trigger" aria-label={t(isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu')} aria-expanded={isMobileMenuOpen} aria-controls="mobile-navigation" onClick={() => setIsMobileMenuOpen((open) => !open)}><MenuIcon /></button>}
+              {user && !isBookingSetupGated && <button type="button" className="primary-button manage-appointments-button" onClick={openAppointments}>
+                <SectionIcon section="calendar" />{t('Manage appointments')}
+              </button>}
+              {user && !isBookingSetupGated && <button type="button" className="icon-button notification-trigger" aria-label={t('Notifications') + ', ' + unreadNotificationCount + ' ' + (accessibilityPreferences.language === 'fr' ? 'non lues' : 'unread')} onClick={() => navigateTo('notifications')}>
                 <BellIcon />{unreadNotificationCount > 0 && <span className="unread-badge">{unreadNotificationCount}</span>}
-              </button>
+              </button>}
               {user ? (
                 <div className="account-actions"><span className="signed-in-label">{t('Signed in: ')}{user.email}</span><button type="button" className="primary-button" onClick={handleLogout}>{t('Log out')}</button></div>
-              ) : (
-                <button type="button" className="primary-button" onClick={() => showAuth ? setShowAuth(false) : openLogin()} aria-expanded={showAuth} aria-controls="auth-panel">{t(showAuth ? 'Close' : 'Log in')}</button>
-              )}
+              ) : null}
             </div>
           </header>
 
           <main id="main-content" className="main-content">
-      {showAuth && !user && (
+      {!isAuthInitialized && (
+        <section className="panel auth-loading-panel" role="status">{t('Preparing your secure sign-in…')}</section>
+      )}
+
+      {isAuthInitialized && !user && (
+        <section className="booking-entry-panel" aria-labelledby="booking-entry-title">
+          <p className="eyebrow">{t('Patient booking')}</p>
+          <h2 id="booking-entry-title">{t('Book your appointment in a few simple steps')}</h2>
+          <p>{t('Sign in or create an account first. We’ll ask for your name, then take you straight to clinic availability.')}</p>
+          <ol className="booking-entry-steps">
+            <li>{t('Sign in or create your account')}</li>
+            <li>{t('Add your name once')}</li>
+            <li>{t('Choose a clinic, date, and time')}</li>
+          </ol>
+          <span className="booking-time-hint">{t('Our goal is to make first-time setup take about 5 minutes.')}</span>
+        </section>
+      )}
+
+      {isAuthInitialized && !user && (
         <section ref={authPanelRef} className="panel auth-panel" id="auth-panel" aria-labelledby="auth-title">
           <div className="panel-header auth-panel-header">
             <h3 id="auth-title">
@@ -466,6 +573,21 @@ function ClinicFlowApp() {
               </button>
             )}
           </div>
+
+          {authMode !== 'reset' && !Capacitor.isNativePlatform() && (
+            <div className="oauth-actions">
+              <button type="button" className="google-auth-button" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+                <svg aria-hidden="true" viewBox="0 0 48 48">
+                  <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11c-.5 2.5-2 4.6-4.2 6v5.1h6.8c4-3.7 6-9 6-14.8Z" />
+                  <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.8l-6.8-5.1c-1.9 1.3-4.1 2.1-6.7 2.1-5.2 0-9.6-3.5-11.2-8.2H5.8v5.2C9.2 39.7 16 44 24 44Z" />
+                  <path fill="#FBBC05" d="M12.8 28c-.4-1.2-.7-2.6-.7-4s.3-2.8.7-4v-5.2H5.8C4.3 17.7 3.5 20.8 3.5 24s.8 6.3 2.3 9.2l7-5.2Z" />
+                  <path fill="#EA4335" d="M24 11.8c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 5.8 29.5 4 24 4 16 4 9.2 8.3 5.8 14.8l7 5.2c1.6-4.7 6-8.2 11.2-8.2Z" />
+                </svg>
+                {t('Continue with Google')}
+              </button>
+              <div className="oauth-divider"><span>{t('or continue with email')}</span></div>
+            </div>
+          )}
 
           <form className="auth-form" onSubmit={handleAuthSubmit}>
             <label>
@@ -552,46 +674,26 @@ function ClinicFlowApp() {
             </button>
           </form>
 
-          {authMode !== 'reset' && !Capacitor.isNativePlatform() && (
-            <div className="oauth-actions">
-              <div className="oauth-divider"><span>{t('or')}</span></div>
-              <button type="button" className="google-auth-button" onClick={handleGoogleSignIn} disabled={isSubmitting}>
-                <svg aria-hidden="true" viewBox="0 0 48 48">
-                  <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11c-.5 2.5-2 4.6-4.2 6v5.1h6.8c4-3.7 6-9 6-14.8Z" />
-                  <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.8l-6.8-5.1c-1.9 1.3-4.1 2.1-6.7 2.1-5.2 0-9.6-3.5-11.2-8.2H5.8v5.2C9.2 39.7 16 44 24 44Z" />
-                  <path fill="#FBBC05" d="M12.8 28c-.4-1.2-.7-2.6-.7-4s.3-2.8.7-4v-5.2H5.8C4.3 17.7 3.5 20.8 3.5 24s.8 6.3 2.3 9.2l7-5.2Z" />
-                  <path fill="#EA4335" d="M24 11.8c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 5.8 29.5 4 24 4 16 4 9.2 8.3 5.8 14.8l7 5.2c1.6-4.7 6-8.2 11.2-8.2Z" />
-                </svg>
-                {t('Continue with Google')}
+          {authMode === 'reset' && (
+            <p className="auth-mode-switch">
+              {t('Remember your password?')}{' '}
+              <button type="button" className="text-button" onClick={() => setAuthModeWithReset('login')}>
+                {t('Return to log in')}
               </button>
-            </div>
+            </p>
           )}
-
-          <p className="auth-mode-switch">
-            {authMode === 'reset' ? (
-              <>
-                {t('Remember your password?')}{' '}
-                <button type="button" className="text-button" onClick={() => setAuthModeWithReset('login')}>
-                  {t('Return to log in')}
-                </button>
-              </>
-            ) : (
-              <>
-                {t(authMode === 'login' ? 'New to ClinicFlow?' : 'Already have an account?')}{' '}
-                <button type="button" className="text-button" onClick={() => setAuthModeWithReset(authMode === 'login' ? 'signup' : 'login')}>
-                  {t(authMode === 'login' ? 'Create an account' : 'Log in')}
-                </button>
-              </>
-            )}
-          </p>
 
         </section>
       )}
 
-            {authMessage && !showAuth && <p className="auth-message" role="status">{t(authMessage)}</p>}
-            {authError && !showAuth && <p className="auth-error" role="alert">{t(authError)}</p>}
+            {authMessage && user && <p className="auth-message" role="status">{t(authMessage)}</p>}
+            {authError && user && <p className="auth-error" role="alert">{t(authError)}</p>}
 
-            {activeSection === 'home' && (
+            {activeSection === 'home' && user && !isPatientProfileChecked && (
+              <section className="panel booking-readiness" role="status">{t('Checking your booking profile…')}</section>
+            )}
+
+            {activeSection === 'home' && user && isPatientProfileChecked && hasPatientProfile && (
               <>
                 <section className="hero-panel">
                   <div><p className="eyebrow">{t('Patient appointment flow')}</p><h2>{t('Find a clinic and book an appointment')}</h2><p className="hero-description">{t('Search local clinics, compare availability, and manage upcoming bookings.')}</p></div>
@@ -603,6 +705,8 @@ function ClinicFlowApp() {
                     userId={user?.id ?? null}
                     hasPatientProfile={hasPatientProfile}
                     refreshToken={appointmentsRefreshToken}
+                    activeSection={calendarPageSection}
+                    onActiveSectionChange={setCalendarPageSection}
                     onLoginRequest={openLogin}
                     onOpenProfile={() => navigateTo('profile')}
                     onClinicChange={setSelectedClinic}
@@ -621,22 +725,39 @@ function ClinicFlowApp() {
               </>
             )}
 
-            {activeSection === 'calendar' && (
+            {activeSection === 'calendar' && user && isPatientProfileChecked && hasPatientProfile && (
               <CalendarPage
                 preferredClinicId={selectedClinic?.id ?? null}
                 userId={user?.id ?? null}
                 hasPatientProfile={hasPatientProfile}
                 refreshToken={appointmentsRefreshToken}
+                activeSection={calendarPageSection}
+                onActiveSectionChange={setCalendarPageSection}
                 onLoginRequest={openLogin}
                 onOpenProfile={() => navigateTo('profile')}
                 onClinicChange={setSelectedClinic}
               />
             )}
 
+            {activeSection === 'profile' && isBookingProfileSetupRequired && (
+              <section className="booking-setup-intro" aria-label={t('Booking setup step 2')}>
+                <p className="eyebrow">{t('Step 2 of 2')}</p>
+                <h2>{t('One quick detail before booking')}</h2>
+                <p>{t('Your name is required for the appointment. You can add a phone number later if you want.')}</p>
+              </section>
+            )}
+
             {user && (
               <div className="settings-page-grid" hidden={activeSection !== 'profile'}>
-                <PatientProfilePanel key={'profile:' + user.id} userId={user.id} onProfileReady={setHasPatientProfile} />
-                {user.email && <AccountSecurityPanel key={'security:' + user.id} email={user.email} recoveryMode={isPasswordRecovery} onRecoveryComplete={() => setIsPasswordRecovery(false)} />}
+                <PatientProfilePanel
+                  key={'profile:' + user.id}
+                  userId={user.id}
+                  initialFirstName={nameHints.firstName}
+                  initialLastName={nameHints.lastName}
+                  onProfileReady={handlePatientProfileReady}
+                  onFirstProfileComplete={handleFirstProfileComplete}
+                />
+                {user.email && !isBookingProfileSetupRequired && <AccountSecurityPanel key={'security:' + user.id} email={user.email} recoveryMode={isPasswordRecovery} onRecoveryComplete={() => setIsPasswordRecovery(false)} />}
               </div>
             )}
             {activeSection === 'profile' && !user && (
@@ -666,18 +787,22 @@ function ClinicFlowApp() {
             {activeSection === 'notifications' && !user && (
               <section className="panel access-prompt"><h2>{t('Sign in to view notifications')}</h2><p className="section-description">{t('Appointment and clinic updates are linked to your account.')}</p><button type="button" className="primary-button" onClick={openLogin}>{t('Log in')}</button></section>
             )}
-            {user && activeSection === 'notifications' && <NotificationCenter key={user.id} onUnreadCountChange={setUnreadNotificationCount} />}
+            {user && activeSection === 'notifications' && <NotificationCenter
+              key={user.id}
+              onUnreadCountChange={setUnreadNotificationCount}
+              onManageAppointments={openAppointments}
+            />}
           </main>
         </div>
       </div>
 
-      <nav className="mobile-bottom-navigation" aria-label="Main navigation">
+      {!isBookingSetupGated && <nav className="mobile-bottom-navigation" aria-label="Main navigation">
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'home' ? 'page' : undefined} onClick={() => navigateTo('home')}><SectionIcon section="home" />{t('Home')}</button>
         <button type="button" className="mobile-nav-link booking-nav-link" onClick={navigateToBooking}><SectionIcon section="clinicFinder" />{t('ClinicFinder')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'calendar' ? 'page' : undefined} onClick={() => navigateTo('calendar')}><SectionIcon section="calendar" />{t('Calendar')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'profile' ? 'page' : undefined} onClick={() => navigateTo('profile')}><SectionIcon section="profile" />{t('Profile')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'settings' ? 'page' : undefined} onClick={() => navigateTo('settings')}><SectionIcon section="settings" />{t('Settings')}</button>
-      </nav>
+      </nav>}
     </div>
     </LanguageProvider>
   )

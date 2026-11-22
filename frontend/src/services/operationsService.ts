@@ -52,6 +52,12 @@ export interface UserNotification {
   message: string
   notification_type: string
   appointment_id: string | null
+  appointment: {
+    start_at: string
+    end_at: string
+    status: string
+    clinic: { name: string; time_zone: string } | null
+  } | null
   read_at: string | null
   created_at: string
 }
@@ -318,7 +324,28 @@ export async function listMyNotifications() {
     .order('created_at', { ascending: false })
     .limit(20)
   if (error) throw error
-  return (data ?? []) as UserNotification[]
+
+  const notifications = (data ?? []) as Omit<UserNotification, 'appointment'>[]
+  const appointmentIds = [...new Set(notifications
+    .map((notification) => notification.appointment_id)
+    .filter((appointmentId): appointmentId is string => Boolean(appointmentId)))]
+  if (appointmentIds.length === 0) {
+    return notifications.map((notification) => ({ ...notification, appointment: null }))
+  }
+
+  const { data: appointmentData, error: appointmentError } = await supabase
+    .from('appointments')
+    .select('id, start_at, end_at, status, clinic:clinics(name, time_zone)')
+    .in('id', appointmentIds)
+  if (appointmentError) throw appointmentError
+
+  const appointmentsById = new Map((appointmentData ?? []).map((appointment) => [appointment.id, appointment]))
+  return notifications.map((notification) => ({
+    ...notification,
+    appointment: notification.appointment_id
+      ? appointmentsById.get(notification.appointment_id) ?? null
+      : null,
+  })) as UserNotification[]
 }
 
 export async function getUnreadNotificationCount() {

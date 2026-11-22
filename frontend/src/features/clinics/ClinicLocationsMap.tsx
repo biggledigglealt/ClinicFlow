@@ -8,9 +8,10 @@ interface ClinicLocationsMapProps {
   clinics: Clinic[]
   selectedClinicId: string | null
   onSelectClinic: (clinic: Clinic) => void
+  maxZoom?: number
 }
 
-export function ClinicLocationsMap({ clinics, selectedClinicId, onSelectClinic }: ClinicLocationsMapProps) {
+export function ClinicLocationsMap({ clinics, selectedClinicId, onSelectClinic, maxZoom = 14 }: ClinicLocationsMapProps) {
   const t = useTranslate()
   const mapElement = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<L.Map | null>(null)
@@ -23,6 +24,9 @@ export function ClinicLocationsMap({ clinics, selectedClinicId, onSelectClinic }
       scrollWheelZoom: false,
       zoomControl: true,
       attributionControl: false,
+      zoomAnimation: false,
+      fadeAnimation: false,
+      markerZoomAnimation: false,
     }).setView([45.4215, -75.6972], 12)
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -36,6 +40,7 @@ export function ClinicLocationsMap({ clinics, selectedClinicId, onSelectClinic }
     const resizeFrame = window.requestAnimationFrame(() => map.invalidateSize())
     return () => {
       window.cancelAnimationFrame(resizeFrame)
+      map.stop()
       map.remove()
       mapInstance.current = null
       markerLayer.current = null
@@ -79,11 +84,11 @@ export function ClinicLocationsMap({ clinics, selectedClinicId, onSelectClinic }
     })
 
     if (clinicsWithLocations.length > 0) {
-      map.fitBounds(pins.getBounds().pad(clinicsWithLocations.length === 1 ? 0.6 : 0.2), { maxZoom: 14 })
+      map.fitBounds(pins.getBounds().pad(clinicsWithLocations.length === 1 ? 0.6 : 0.2), { maxZoom })
     }
     const resizeFrame = window.requestAnimationFrame(() => map.invalidateSize())
     return () => window.cancelAnimationFrame(resizeFrame)
-  }, [clinics, selectedClinicId, onSelectClinic, t])
+  }, [clinics, selectedClinicId, onSelectClinic, maxZoom, t])
 
   return <div className="clinic-map-canvas" ref={mapElement} role="region" aria-label={t('Map showing all clinic search results')} />
 }

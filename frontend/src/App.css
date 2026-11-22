@@ -70,6 +70,83 @@
   gap: 24px;
 }
 
+.auth-gated .app-layout,
+.profile-setup-gated .app-layout,
+.profile-check-pending .app-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.auth-gated .side-rail,
+.auth-gated .mobile-bottom-navigation,
+.profile-setup-gated .side-rail,
+.profile-setup-gated .mobile-bottom-navigation,
+.profile-check-pending .side-rail,
+.profile-check-pending .mobile-bottom-navigation {
+  display: none;
+}
+
+.profile-setup-gated .settings-page-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.auth-loading-panel {
+  width: min(100%, 680px);
+  margin: 0 auto;
+  padding: 24px;
+  color: #475569;
+}
+
+.booking-entry-panel {
+  width: min(100%, 680px);
+  margin: 8px auto 0;
+  padding: 24px 28px;
+  border: 1px solid #dce7f3;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f8fbff, #fff);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+}
+
+.booking-entry-panel h2,
+.booking-setup-intro h2 {
+  margin: 0 0 8px;
+  color: #172554;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+}
+
+.booking-entry-panel > p:not(.eyebrow),
+.booking-setup-intro > p:not(.eyebrow) {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.booking-entry-steps {
+  display: grid;
+  gap: 7px;
+  margin: 18px 0 10px;
+  padding-left: 1.35rem;
+  color: #334155;
+}
+
+.booking-time-hint {
+  color: #18734b;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.booking-setup-intro {
+  padding: 2px 4px 0;
+}
+
+.booking-setup-intro .eyebrow {
+  margin-bottom: 5px;
+}
+
+.booking-readiness {
+  padding: 20px;
+  color: #475569;
+}
+
 .app-main,
 .main-content {
   min-width: 0;
@@ -245,6 +322,20 @@
   justify-content: flex-end;
   gap: 12px;
   min-width: 0;
+}
+
+.manage-appointments-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 0.72rem 1rem;
+  white-space: nowrap;
+}
+
+.manage-appointments-button .section-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .icon-button {
@@ -546,6 +637,29 @@
   gap: 14px;
 }
 
+.optional-profile-details {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 12px;
+  color: #475569;
+}
+
+.optional-profile-details summary {
+  width: fit-content;
+  min-height: 44px;
+  padding: 11px 0;
+  color: #2457e6;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.optional-profile-details label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-weight: 600;
+}
+
 .profile-form label {
   display: grid;
   align-content: start;
@@ -629,7 +743,7 @@
 .oauth-actions {
   display: grid;
   gap: 12px;
-  margin-top: 18px;
+  margin-bottom: 16px;
 }
 
 .oauth-divider {
@@ -835,6 +949,29 @@
 .staff-appointment-list span {
   margin: 0;
   color: #475569;
+}
+
+.notification-appointment-details {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-left: 3px solid #2563eb;
+  border-radius: 6px;
+  color: #334155;
+  background: #eff6ff;
+  font-size: 0.9rem;
+}
+
+.notification-appointment-details strong {
+  color: #1e3a8a;
+}
+
+.notification-actions {
+  display: flex !important;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px !important;
 }
 
 .notification-list small {
@@ -1188,6 +1325,15 @@
 .clinic-map-dialog-content > .clinic-map-canvas {
   min-height: 260px;
   height: 100%;
+}
+
+.clinic-map-dialog-map-loading {
+  display: grid;
+  min-height: 240px;
+  height: 100%;
+  place-items: center;
+  margin: 0;
+  color: #64748b;
 }
 
 .clinic-map-dialog-results {
@@ -2522,6 +2668,15 @@ button.calendar-time-card:focus-visible {
 }
 
 @media (max-width: 700px) {
+  .booking-entry-panel {
+    margin-top: 0;
+    padding: 20px;
+  }
+
+  .booking-setup-intro {
+    padding-inline: 2px;
+  }
+
   .app-shell {
     padding: 12px 12px calc(88px + env(safe-area-inset-bottom));
   }
@@ -2561,10 +2716,15 @@ button.calendar-time-card:focus-visible {
   }
 
   .topbar {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 10px;
     padding: 15px;
     margin-bottom: 16px;
+  }
+
+  .topbar-heading,
+  .topbar-actions {
+    flex: 1 1 100%;
   }
 
   .topbar h1 {
@@ -2577,8 +2737,16 @@ button.calendar-time-card:focus-visible {
   }
 
   .topbar-actions {
-    flex: 0 0 auto;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .manage-appointments-button {
+    min-height: 40px;
     gap: 6px;
+    padding: 0.62rem 0.78rem;
+    font-size: 0.78rem;
   }
 
   .icon-button {
@@ -2808,6 +2976,10 @@ button.calendar-time-card:focus-visible {
 
   .clinic-map-dialog-content > .clinic-map-canvas {
     height: 100%;
+    min-height: 220px;
+  }
+
+  .clinic-map-dialog-map-loading {
     min-height: 220px;
   }
 

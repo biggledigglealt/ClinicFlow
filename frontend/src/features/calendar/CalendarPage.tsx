@@ -21,6 +21,8 @@ interface CalendarPageProps {
   userId: string | null
   hasPatientProfile: boolean
   refreshToken: number
+  activeSection: CalendarSection
+  onActiveSectionChange: (section: CalendarSection) => void
   onLoginRequest: () => void
   onOpenProfile: () => void
   onClinicChange: (clinic: Clinic) => void
@@ -153,6 +155,8 @@ export function CalendarPage({
   userId,
   hasPatientProfile,
   refreshToken,
+  activeSection,
+  onActiveSectionChange,
   onLoginRequest,
   onOpenProfile,
   onClinicChange,
@@ -163,7 +167,6 @@ export function CalendarPage({
   const [selectedClinicId, setSelectedClinicId] = useState(preferredClinicId ?? '')
   const [selectedDate, setSelectedDate] = useState(initialCalendarDate)
   const [view, setView] = useState<CalendarView>('month')
-  const [activeSection, setActiveSection] = useState<CalendarSection>('calendar')
   const [slots, setSlots] = useState<AppointmentSlot[]>([])
   const [appointments, setAppointments] = useState<PatientAppointment[]>([])
   const [availableDates, setAvailableDates] = useState<Record<string, number>>({})
@@ -370,7 +373,7 @@ export function CalendarPage({
   }
 
   function selectCalendarDate(date: string) {
-    setActiveSection('calendar')
+    onActiveSectionChange('calendar')
     setSelectedDate(date)
     setSelectedSlotKey(null)
     setMessage('')
@@ -431,7 +434,7 @@ export function CalendarPage({
     setSelectedSlotKey(null)
     setReschedulingId(null)
     setSelectedAppointmentId(appointmentBeingRescheduled)
-    setActiveSection('appointments')
+    onActiveSectionChange('appointments')
     setMessage(t(appointmentBeingRescheduled
       ? 'Your appointment has been rescheduled.'
       : 'Your appointment is booked.'))
@@ -466,7 +469,7 @@ export function CalendarPage({
     if (selectedClinic?.id !== clinic.id) onClinicChange(clinic)
     setSelectedDate(dateInTimeZoneForValue(appointment.start_at, clinic.time_zone))
     setView('day')
-    setActiveSection('calendar')
+    onActiveSectionChange('calendar')
     setSelectedAppointmentId(appointment.id)
     setReschedulingId(appointment.id)
     setSelectedSlotKey(null)
@@ -488,7 +491,7 @@ export function CalendarPage({
       setSelectedClinicId(clinic.id)
       onClinicChange(clinic)
     }
-    setActiveSection('calendar')
+    onActiveSectionChange('calendar')
     setSelectedAppointmentId(appointment.id)
     setSelectedDate(dateInTimeZoneForValue(appointment.start_at, appointmentTimeZone(appointment)))
     setView('day')
@@ -514,12 +517,12 @@ export function CalendarPage({
       <div className="calendar-section-switch" role="group" aria-label={t('Calendar section')}>
         <button type="button" aria-pressed={activeSection === 'calendar'}
           className={activeSection === 'calendar' ? 'is-active' : ''}
-          onClick={() => setActiveSection('calendar')}>
+          onClick={() => onActiveSectionChange('calendar')}>
           {t('Calendar')}
         </button>
         <button type="button" aria-pressed={activeSection === 'appointments'}
           className={activeSection === 'appointments' ? 'is-active' : ''}
-          onClick={() => setActiveSection('appointments')}>
+          onClick={() => onActiveSectionChange('appointments')}>
           {t('My upcoming appointments')}
           <span className="calendar-appointment-count">{visibleAppointments.length}</span>
         </button>
@@ -678,7 +681,7 @@ export function CalendarPage({
 
       <aside ref={dayAgendaRef} className="calendar-detail-panel" aria-labelledby="calendar-day-title" tabIndex={-1}>
         <div className="calendar-detail-heading">
-          <button type="button" className="calendar-my-appointments" onClick={() => setActiveSection('appointments')}>
+          <button type="button" className="calendar-my-appointments" onClick={() => onActiveSectionChange('appointments')}>
             <span aria-hidden="true">‹</span> {t('My upcoming appointments')} ({visibleAppointments.length})
           </button>
           <h2 id="calendar-day-title">{formatLongDate(selectedDate, language)}</h2>

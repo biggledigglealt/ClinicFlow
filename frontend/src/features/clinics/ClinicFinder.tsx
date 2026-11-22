@@ -71,6 +71,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   const [sortBy, setSortBy] = useState<SortOption>('nearest')
   const [isLoading, setIsLoading] = useState(true)
   const [isMapOpen, setIsMapOpen] = useState(false)
+  const [isMapLayoutReady, setIsMapLayoutReady] = useState(false)
   const [error, setError] = useState('')
   const sortedClinics = useMemo(() => sortClinics(clinics, sortBy), [clinics, sortBy])
   const mappedClinics = sortedClinics.filter((clinic) => clinic.latitude != null && clinic.longitude != null)
@@ -78,13 +79,31 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   useEffect(() => {
     const dialog = mapDialogRef.current
     if (!dialog) return
-    if (isMapOpen && !dialog.open) dialog.showModal()
-    if (!isMapOpen && dialog.open) dialog.close()
+    let layoutFrame: number | undefined
+    if (isMapOpen) {
+      if (!dialog.open) dialog.showModal()
+      layoutFrame = window.requestAnimationFrame(() => setIsMapLayoutReady(true))
+    } else {
+      if (dialog.open) dialog.close()
+    }
+    return () => {
+      if (layoutFrame !== undefined) window.cancelAnimationFrame(layoutFrame)
+    }
   }, [isMapOpen])
 
   function selectClinicFromMap(clinic: Clinic) {
-    setIsMapOpen(false)
+    closeMap()
     onSelectClinic(clinic)
+  }
+
+  function openMap() {
+    setIsMapLayoutReady(false)
+    setIsMapOpen(true)
+  }
+
+  function closeMap() {
+    setIsMapLayoutReady(false)
+    setIsMapOpen(false)
   }
 
   function resetFilters() {
@@ -168,11 +187,10 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
               type="search"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
-              placeholder={t('e.g. Ottawa or K1N 6N5')}
+              placeholder={t('Enter a city or postal code')}
               maxLength={100}
               required
             />
-            <span className="field-hint">{t('Prototype data covers Ottawa and postal prefixes K1N and K2G.')}</span>
           </label>
 
           <label htmlFor="clinic-distance-search">
@@ -268,7 +286,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
                 <span>{t('Select a pin or clinic to choose a clinic for booking.')}</span>
               </div>
               {mappedClinics.length > 0 && (
-                <button type="button" className="clinic-map-open-button" onClick={() => setIsMapOpen(true)}>
+                <button type="button" className="clinic-map-open-button" onClick={openMap}>
                   {t('Open map')}
                 </button>
               )}
@@ -301,9 +319,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
                         <h4>{clinic.name}</h4>
                         <span className="distance-pill">{clinic.distance_km.toFixed(1)} km</span>
                       </div>
-                      {clinic.listing_status === 'demo' ? (
-                        <p className="clinic-listing-note"><strong>{t('Demo listing:')}</strong> {t('synthetic prototype data, not a real clinic.')}</p>
-                      ) : (
+                      {clinic.listing_status === 'verified' && (
                         <p className="clinic-listing-note">
                           {t('Verified from ')}{clinic.source_name}{t(' on ')}{clinic.source_checked_on}
                           {clinic.source_url && <> {' · '}<a href={clinic.source_url} target="_blank" rel="noreferrer">{t('View source')}</a></>}
@@ -346,7 +362,7 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
       )}
 
       <dialog ref={mapDialogRef} className="clinic-map-dialog" aria-labelledby="clinic-map-dialog-title"
-        onClose={() => setIsMapOpen(false)}>
+        onClose={closeMap}>
         {isMapOpen && (
           <div className="clinic-map-dialog-content">
             <header className="clinic-map-dialog-header">
@@ -354,13 +370,22 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
                 <p className="eyebrow">{t('Clinic search results')}</p>
                 <h2 id="clinic-map-dialog-title">{t('Clinic locations')}</h2>
               </div>
-              <button type="button" className="secondary-button" onClick={() => setIsMapOpen(false)}>
+              <button type="button" className="secondary-button" onClick={closeMap}>
                 {t('Close map')}
               </button>
             </header>
-            <Suspense fallback={<p className="clinic-map-unavailable" role="status">{t('Loading map…')}</p>}>
-              <ClinicLocationsMap clinics={sortedClinics} selectedClinicId={selectedClinicId} onSelectClinic={selectClinicFromMap} />
-            </Suspense>
+            {isMapLayoutReady ? (
+              <Suspense fallback={<p className="clinic-map-unavailable" role="status">{t('Loading map…')}</p>}>
+                <ClinicLocationsMap
+                  clinics={sortedClinics}
+                  selectedClinicId={selectedClinicId}
+                  onSelectClinic={selectClinicFromMap}
+                  maxZoom={10}
+                />
+              </Suspense>
+            ) : (
+              <p className="clinic-map-dialog-map-loading" role="status">{t('Loading map…')}</p>
+            )}
             <div className="clinic-map-dialog-results" aria-label={t('Clinic search results')}>
               <p className="clinic-map-results-count">
                 {t('Showing')} {mappedClinics.length} {t('of')} {sortedClinics.length} {t('clinic locations on the map')}

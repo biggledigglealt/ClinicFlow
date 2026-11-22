@@ -91,7 +91,14 @@ async function respond(route: Route, body: unknown, status = 200) {
   })
 }
 
-async function installSupabaseMocks(page: Page, platformAdmin = false) {
+async function installSupabaseMocks(page: Page, platformAdmin = false, hasPatientProfile = true) {
+  let patientProfile = hasPatientProfile ? {
+    id: patientId,
+    user_id: patientId,
+    first_name: 'Casey',
+    last_name: 'Patient',
+    phone: null,
+  } : null
   let appointments: TestAppointment[] = [{
     id: appointmentId,
     clinic_id: clinicBId,
@@ -107,6 +114,16 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
     const path = url.pathname
 
     if (path === '/auth/v1/token' && url.searchParams.get('grant_type') === 'password') {
+      await respond(route, {
+        access_token: 'synthetic-e2e-access-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'synthetic-e2e-refresh-token',
+        user,
+      })
+      return
+    }
+    if (path === '/auth/v1/signup') {
       await respond(route, {
         access_token: 'synthetic-e2e-access-token',
         token_type: 'bearer',
@@ -139,13 +156,19 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
       return
     }
     if (path === '/rest/v1/patient_profiles') {
-      await respond(route, {
-        id: patientId,
-        user_id: patientId,
-        first_name: 'Casey',
-        last_name: 'Patient',
-        phone: null,
-      })
+      if (request.method() === 'GET') {
+        await respond(route, patientProfile)
+      } else {
+        const submitted = request.postDataJSON() as Record<string, unknown> | null
+        patientProfile = {
+          id: patientId,
+          user_id: patientId,
+          first_name: String(submitted?.first_name ?? ''),
+          last_name: String(submitted?.last_name ?? ''),
+          phone: submitted?.phone ? String(submitted.phone) : null,
+        }
+        await respond(route, patientProfile)
+      }
       return
     }
     if (path === '/rest/v1/accessibility_preferences') {
@@ -273,9 +296,9 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
 async function signInAsPatient(page: Page, platformAdmin = false) {
   const backend = await installSupabaseMocks(page, platformAdmin)
   await page.goto('/')
-  await page.getByRole('button', { name: 'Log in', exact: true }).first().click()
+  await expect(page.locator('#auth-panel')).toBeVisible()
   await page.getByLabel('Email', { exact: true }).fill('patient@example.test')
-  await page.getByLabel('Password', { exact: true }).fill('Synthetic-password-123!')
+  await page.getByLabel(/Password/).fill('Synthetic-password-123!')
   await page.locator('#auth-panel button[type="submit"]').click()
   await expect(page.getByRole('button', { name: 'Log out', exact: true })).toBeVisible()
   return backend
@@ -288,15 +311,53 @@ async function navigateThroughMainMenu(page: Page, label: string) {
   await page.locator('#mobile-navigation').getByRole('button', { name: label }).click()
 }
 
-test('guest can see a clinic calendar and book after signing in', async ({ page }) => {
-  const backend = await installSupabaseMocks(page)
+test('new patient is guided through sign-up, profile completion, and booking', async ({ page }) => {
+  const backend = await installSupabaseMocks(page, false, false)
   await page.goto('/')
+
+  await expect(page.getByRole('heading', { name: 'Sign in to book', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Book your appointment in a few simple steps' })).toBeVisible()
+  await expect(page.locator('.oauth-actions').getByRole('button', { name: 'Continue with Google' })).toBeVisible()
+  await expect(page.locator('.clinic-card')).toHaveCount(0)
+  await expect(page.locator('#clinic-booking-calendar')).toHaveCount(0)
+  await expect(page.locator('.rail-navigation')).toBeHidden()
+
+  await page.getByRole('button', { name: 'Sign up', exact: true }).click()
+  await page.getByLabel('Email', { exact: true }).fill('patient@example.test')
+  await page.getByLabel(/Password/).fill('Synthetic-password-123!')
+  await page.locator('#auth-panel button[type="submit"]').click()
+
+  await expect(page.getByRole('heading', { name: 'One quick detail before booking' })).toBeVisible()
+  await expect(page.locator('#patient-profile-title')).toBeVisible()
+  await expect(page.locator('.clinic-card')).toHaveCount(0)
+  await page.getByLabel('First name', { exact: true }).fill('Casey')
+  await page.getByLabel('Last name', { exact: true }).fill('Patient')
+  await page.getByRole('button', { name: 'Continue to booking', exact: true }).click()
+
+  await expect(page.getByRole('heading', { name: 'Find a clinic', exact: true })).toBeVisible()
+  const clinicCard = page.locator('.clinic-card').filter({ hasText: 'Beta Health Clinic' })
+  await clinicCard.getByRole('button', { name: 'Select clinic', exact: true }).click()
+
+  const calendar = page.locator('#clinic-booking-calendar')
+  await expect(calendar.locator('.calendar-clinic-context')).toContainText('Beta Health Clinic')
+  await page.getByLabel('Select date').fill(appointmentDate)
+  await expect(page.getByRole('gridcell', { name: /December 29, 2 available appointment times/ })).toBeVisible()
+  await page.getByRole('gridcell', { name: /December 29, 2 available appointment times/ }).click()
+  await expect(calendar.locator('.calendar-availability')).toContainText('2 available appointment times')
+  await calendar.locator('.calendar-time-card.is-available').first().click()
+  await calendar.getByRole('button', { name: 'Book appointment', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Your appointment is booked.' })).toBeVisible()
+  expect(backend.calls.book).toBe(1)
+})
+
+test('existing patient signs in and books a clinic appointment', async ({ page }) => {
+  const backend = await signInAsPatient(page)
 
   const clinicCard = page.locator('.clinic-card').filter({ hasText: 'Beta Health Clinic' })
   await clinicCard.getByRole('button', { name: 'Select clinic', exact: true }).click()
 
   const calendar = page.locator('#clinic-booking-calendar')
-  await expect(calendar).toBeInViewport({ ratio: 0.1 })
+  await expect(calendar).toBeVisible()
   await expect(calendar.locator('.calendar-clinic-context')).toContainText('Beta Health Clinic')
   await page.getByLabel('Select date').fill(appointmentDate)
   await expect(page.getByRole('gridcell', { name: /December 29, 2 available appointment times/ })).toBeVisible()
@@ -304,25 +365,12 @@ test('guest can see a clinic calendar and book after signing in', async ({ page 
   await page.getByRole('gridcell', { name: /December 29, 2 available appointment times/ }).click()
   const availability = calendar.locator('.calendar-availability')
   await expect(availability).toContainText('2 available appointment times')
-  const availabilityPrecedesAccessPrompt = await calendar.evaluate((element) => {
-    const availableSection = element.querySelector('.calendar-availability')
-    const accessPrompt = element.querySelector('.calendar-access-prompt')
-    return Boolean(availableSection && accessPrompt
-      && (availableSection.compareDocumentPosition(accessPrompt) & Node.DOCUMENT_POSITION_FOLLOWING))
-  })
-  expect(availabilityPrecedesAccessPrompt).toBe(true)
   const slot = page.locator('.calendar-time-card.is-available').first()
   await expect(availability.locator('.calendar-time-card.is-available')).toHaveCount(2)
   await expect(slot).toContainText('9:00')
   await expect(slot).toContainText('Available')
   await expect(slot).toBeInViewport()
   await slot.click()
-  await page.getByRole('button', { name: 'Log in to book', exact: true }).last().click()
-
-  await page.getByLabel('Email', { exact: true }).fill('patient@example.test')
-  await page.getByLabel('Password', { exact: true }).fill('Synthetic-password-123!')
-  await page.locator('#auth-panel button[type="submit"]').click()
-  await expect(page.getByRole('button', { name: 'Log out', exact: true })).toBeVisible()
   await calendar.getByRole('button', { name: 'Book appointment', exact: true }).click()
 
   await expect(page.getByRole('status').filter({ hasText: 'Your appointment is booked.' })).toBeVisible()
@@ -331,8 +379,7 @@ test('guest can see a clinic calendar and book after signing in', async ({ page 
 })
 
 test('hard refresh restores the selected clinic and its availability', async ({ page }) => {
-  const backend = await installSupabaseMocks(page)
-  await page.goto('/')
+  const backend = await signInAsPatient(page)
 
   const clinicCard = page.locator('.clinic-card').filter({ hasText: 'Beta Health Clinic' })
   await clinicCard.getByRole('button', { name: 'Select clinic', exact: true }).click()
@@ -354,8 +401,9 @@ test('hard refresh restores the selected clinic and its availability', async ({ 
 })
 
 test('ClinicFinder toolbar uses a distinct icon and its map shows all clinic results', async ({ page }) => {
-  await installSupabaseMocks(page)
-  await page.goto('/')
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  await signInAsPatient(page)
 
   const navigation = (page.viewportSize()?.width ?? 1024) <= 700
     ? page.locator('.mobile-bottom-navigation')
@@ -372,7 +420,9 @@ test('ClinicFinder toolbar uses a distinct icon and its map shows all clinic res
   const mapDialog = page.locator('.clinic-map-dialog')
   await expect(mapDialog).toBeVisible()
   await expect(mapDialog.getByRole('heading', { name: 'Clinic locations', exact: true })).toBeVisible()
-  await expect(mapDialog.locator('.leaflet-marker-icon')).toHaveCount(2)
+  const mapRegion = mapDialog.getByRole('region', { name: 'Map showing all clinic search results' })
+  await expect(mapRegion.getByRole('button', { name: '1', exact: true })).toBeVisible()
+  await expect(mapRegion.getByRole('button', { name: '2', exact: true })).toBeVisible()
   await expect(mapDialog.locator('.clinic-map-result')).toHaveCount(2)
   await expect(mapDialog.locator('.clinic-map-result').nth(0)).toContainText('Alpha Family Clinic')
   await expect(mapDialog.locator('.clinic-map-result').nth(1)).toContainText('Beta Health Clinic')
@@ -381,6 +431,7 @@ test('ClinicFinder toolbar uses a distinct icon and its map shows all clinic res
   await expect(mapDialog).not.toBeVisible()
   await expect(page.locator('.clinic-card').filter({ hasText: 'Beta Health Clinic' })
     .getByRole('button', { name: 'Selected', exact: true })).toBeVisible()
+  expect(pageErrors).toEqual([])
 })
 
 test('patient can find and reschedule an appointment at another clinic', async ({ page }) => {

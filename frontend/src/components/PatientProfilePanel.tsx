@@ -5,9 +5,18 @@ import { useTranslate } from '../lib/i18n'
 interface PatientProfilePanelProps {
   userId: string
   onProfileReady: (ready: boolean) => void
+  onFirstProfileComplete?: () => void
+  initialFirstName?: string
+  initialLastName?: string
 }
 
-export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePanelProps) {
+export function PatientProfilePanel({
+  userId,
+  onProfileReady,
+  onFirstProfileComplete,
+  initialFirstName = '',
+  initialLastName = '',
+}: PatientProfilePanelProps) {
   const t = useTranslate()
   const [profile, setProfile] = useState<PatientProfile | null>(null)
   const [firstName, setFirstName] = useState('')
@@ -25,8 +34,8 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
       .then((currentProfile) => {
         if (!isCurrent) return
         setProfile(currentProfile)
-        setFirstName(currentProfile?.first_name ?? '')
-        setLastName(currentProfile?.last_name ?? '')
+        setFirstName(currentProfile?.first_name ?? initialFirstName)
+        setLastName(currentProfile?.last_name ?? initialLastName)
         setPhone(currentProfile?.phone ?? '')
         onProfileReady(Boolean(currentProfile))
       })
@@ -43,7 +52,7 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
     return () => {
       isCurrent = false
     }
-  }, [userId, onProfileReady, t])
+  }, [userId, onProfileReady, initialFirstName, initialLastName, t])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -52,6 +61,7 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
     setIsSaving(true)
 
     try {
+      const isFirstProfile = !profile
       const savedProfile = await savePatientProfile(userId, {
         firstName,
         lastName,
@@ -62,6 +72,7 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
       setLastName(savedProfile.last_name)
       setPhone(savedProfile.phone ?? '')
       onProfileReady(true)
+      if (isFirstProfile) onFirstProfileComplete?.()
       setMessage(t('Your booking profile is saved.'))
     } catch (saveError) {
       setError(t(saveError instanceof Error ? saveError.message : 'Could not save your profile.'))
@@ -83,7 +94,9 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
       ) : (
         <>
           <p className="section-description">
-            {t('We only ask for the contact details needed to manage appointments. Date of birth is not required.')}
+            {t(profile
+              ? 'We only ask for the contact details needed to manage appointments. Date of birth is not required.'
+              : 'Add the name for your appointments. You can add a phone number later if you want.')}
           </p>
           <form className="profile-form" onSubmit={handleSubmit}>
             <label>
@@ -108,23 +121,40 @@ export function PatientProfilePanel({ userId, onProfileReady }: PatientProfilePa
                 required
               />
             </label>
-            <label>
-              {t('Phone')} <span className="input-hint">{t('Optional')}</span>
-              <input
-                type="tel"
-                name="phone"
-                autoComplete="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                maxLength={32}
-              />
-            </label>
+            {profile ? (
+              <label>
+                {t('Phone')} <span className="input-hint">{t('Optional')}</span>
+                <input
+                  type="tel"
+                  name="phone"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  maxLength={32}
+                />
+              </label>
+            ) : (
+              <details className="optional-profile-details">
+                <summary>{t('Add a phone number (optional)')}</summary>
+                <label>
+                  {t('Phone')}
+                  <input
+                    type="tel"
+                    name="phone"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    maxLength={32}
+                  />
+                </label>
+              </details>
+            )}
 
             {error && <p className="auth-error" role="alert">{error}</p>}
             {message && <p className="auth-message" role="status">{message}</p>}
 
             <button type="submit" className="primary-button" disabled={isSaving}>
-              {t(isSaving ? 'Saving…' : profile ? 'Update profile' : 'Save profile')}
+              {t(isSaving ? 'Saving…' : profile ? 'Update profile' : 'Continue to booking')}
             </button>
           </form>
         </>
