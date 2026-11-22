@@ -1926,6 +1926,14 @@
   font-weight: 700;
 }
 
+.calendar-date-weekday {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .calendar-date-availability {
   display: inline-flex;
   min-height: 15px;
@@ -2578,10 +2586,11 @@ button.calendar-time-card:focus-visible {
   }
 
   .calendar-detail-panel {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-    column-gap: 20px;
+    display: flex;
+  }
+
+  .calendar-availability .calendar-time-list {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 
   .calendar-detail-heading,
@@ -2735,6 +2744,20 @@ button.calendar-time-card:focus-visible {
     gap: 3px;
   }
 
+  .calendar-grid-week .calendar-weekdays {
+    display: none;
+  }
+
+  .calendar-grid-week .calendar-date-grid {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 2px 10px;
+    scroll-padding-inline: 2px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .calendar-date-cell {
     min-height: 72px;
     gap: 3px;
@@ -2832,7 +2855,25 @@ button.calendar-time-card:focus-visible {
   }
 
   .calendar-grid-week .calendar-date-cell {
-    min-height: 180px;
+    flex: 0 0 clamp(126px, 42vw, 154px);
+    min-height: 120px;
+    gap: 4px;
+    padding: 8px;
+    scroll-snap-align: start;
+  }
+
+  .calendar-grid-week .calendar-date-cell.is-selected {
+    padding: 7px;
+  }
+
+  .calendar-grid-week .calendar-date-weekday {
+    font-size: 0.7rem;
+  }
+
+  .calendar-grid-week .calendar-event-chip,
+  .calendar-grid-week .calendar-more-events {
+    padding: 3px 5px;
+    font-size: 0.62rem;
   }
 
   .calendar-grid-day .calendar-date-cell {

@@ -6,6 +6,7 @@ const clinicBId = '40000000-0000-4000-8000-000000000002'
 const staffId = '20000000-0000-4000-8000-000000000001'
 const appointmentId = '50000000-0000-4000-8000-000000000001'
 const appointmentDate = '2030-12-29'
+const morningStart = `${appointmentDate}T14:00:00.000Z`
 const oldStart = `${appointmentDate}T15:00:00.000Z`
 const newStart = `${appointmentDate}T17:00:00.000Z`
 
@@ -188,14 +189,24 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
         const clinicIdForSlots = body?.p_clinic_id
         const date = body?.p_date
         const slots = clinicIdForSlots === clinicBId && date === appointmentDate
-          ? [{
-              staff_id: staffId,
-              staff_first_name: 'Taylor',
-              staff_last_name: 'Reed',
-              staff_job_title: 'Nurse practitioner',
-              start_at: newStart,
-              end_at: `${appointmentDate}T17:30:00.000Z`,
-            }]
+          ? [
+              {
+                staff_id: staffId,
+                staff_first_name: 'Taylor',
+                staff_last_name: 'Reed',
+                staff_job_title: 'Nurse practitioner',
+                start_at: morningStart,
+                end_at: `${appointmentDate}T14:30:00.000Z`,
+              },
+              {
+                staff_id: staffId,
+                staff_first_name: 'Taylor',
+                staff_last_name: 'Reed',
+                staff_job_title: 'Nurse practitioner',
+                start_at: newStart,
+                end_at: `${appointmentDate}T17:30:00.000Z`,
+              },
+            ]
           : []
         await respond(route, slots)
         return
@@ -208,7 +219,7 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
           && appointmentDate >= startDate
           && appointmentDate <= endDate
         await respond(route, hasAvailableDay
-          ? [{ available_date: appointmentDate, available_slots: 1 }]
+          ? [{ available_date: appointmentDate, available_slots: 2 }]
           : [])
         return
       }
@@ -286,11 +297,11 @@ test('guest can see a clinic calendar and book after signing in', async ({ page 
   await expect(calendar).toBeInViewport({ ratio: 0.1 })
   await expect(calendar.locator('.calendar-clinic-context')).toContainText('Beta Health Clinic')
   await page.getByLabel('Select date').fill(appointmentDate)
-  await expect(page.getByRole('gridcell', { name: /December 29, 1 available appointment time/ })).toBeVisible()
+  await expect(page.getByRole('gridcell', { name: /December 29, 2 available appointment times/ })).toBeVisible()
 
-  await page.getByRole('gridcell', { name: /December 29, 1 available appointment time/ }).click()
+  await page.getByRole('gridcell', { name: /December 29, 2 available appointment times/ }).click()
   const availability = calendar.locator('.calendar-availability')
-  await expect(availability).toContainText('1 available appointment time')
+  await expect(availability).toContainText('2 available appointment times')
   const availabilityPrecedesAccessPrompt = await calendar.evaluate((element) => {
     const availableSection = element.querySelector('.calendar-availability')
     const accessPrompt = element.querySelector('.calendar-access-prompt')
@@ -299,7 +310,8 @@ test('guest can see a clinic calendar and book after signing in', async ({ page 
   })
   expect(availabilityPrecedesAccessPrompt).toBe(true)
   const slot = page.locator('.calendar-time-card.is-available').first()
-  await expect(slot).toContainText('12:00')
+  await expect(availability.locator('.calendar-time-card.is-available')).toHaveCount(2)
+  await expect(slot).toContainText('9:00')
   await expect(slot).toContainText('Available')
   await expect(slot).toBeInViewport()
   await slot.click()
@@ -347,7 +359,7 @@ test('patient can find and reschedule an appointment at another clinic', async (
   await expect(page.getByRole('status').filter({ hasText: 'Your appointment has been rescheduled.' })).toBeVisible()
   await expect(page.locator('.calendar-appointment-summary').first()).toContainText('Beta Health Clinic')
   await expect(page.locator('.calendar-appointment-summary').first()).toContainText('Sunday, December 29')
-  await expect(page.locator('.calendar-appointment-summary').first()).toContainText('12:00')
+  await expect(page.locator('.calendar-appointment-summary').first()).toContainText('9:00')
   expect(backend.calls.reschedule).toBe(1)
 
   page.once('dialog', (dialog) => dialog.accept())
@@ -368,8 +380,9 @@ test('selecting a date brings the cross-clinic agenda into view on mobile', asyn
   const dayAgenda = page.locator('.calendar-detail-panel')
   const availability = dayAgenda.locator('.calendar-availability')
   await expect(availability).toContainText('Beta Health Clinic')
-  await expect(availability).toContainText('1 available appointment time')
+  await expect(availability).toContainText('2 available appointment times')
   const availableSlot = availability.locator('.calendar-time-card.is-available').first()
+  await expect(availability.locator('.calendar-time-card.is-available')).toHaveCount(2)
   await expect(availableSlot).toBeVisible()
   await expect(availableSlot).toContainText('Available')
   await expect(dayAgenda).toContainText('Beta Health Clinic')
@@ -379,6 +392,56 @@ test('selecting a date brings the cross-clinic agenda into view on mobile', asyn
   if ((page.viewportSize()?.width ?? 1024) <= 820) {
     await expect(dayAgenda).toBeInViewport({ ratio: 0.1 })
   }
+})
+
+test('phone week view shows readable swipeable day cards', async ({ page }) => {
+  await signInAsPatient(page)
+  const calendar = page.locator('#clinic-booking-calendar')
+  const clinicSelect = calendar.locator('#calendar-clinic')
+  await expect(clinicSelect).toBeEnabled()
+  await clinicSelect.selectOption(clinicBId)
+  await page.getByLabel('Select date').fill(appointmentDate)
+  await calendar.getByRole('button', { name: 'Week', exact: true }).click()
+
+  const weekGrid = calendar.locator('.calendar-grid-week .calendar-date-grid')
+  await expect(weekGrid).toBeVisible()
+  await expect(weekGrid.locator('.calendar-date-cell').first().locator('.calendar-date-weekday')).toBeVisible()
+
+  if ((page.viewportSize()?.width ?? 1024) <= 700) {
+    const dimensions = await weekGrid.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      display: getComputedStyle(element).display,
+    }))
+    expect(dimensions.display).toBe('flex')
+    expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth)
+    const firstCard = await weekGrid.locator('.calendar-date-cell').first().boundingBox()
+    expect(firstCard?.width).toBeGreaterThan(100)
+    await weekGrid.evaluate((element) => { element.scrollLeft = element.scrollWidth })
+    expect(await weekGrid.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0)
+  }
+})
+
+test('patient can reschedule from the home booking flow', async ({ page }) => {
+  const backend = await signInAsPatient(page)
+  const calendar = page.locator('#clinic-booking-calendar')
+  await calendar.locator('#calendar-clinic').selectOption(clinicBId)
+  await calendar.locator('.calendar-section-switch')
+    .getByRole('button', { name: /My upcoming appointments/ }).click()
+  const appointment = calendar.locator('.calendar-appointment-summary').first()
+  await appointment.click()
+  await calendar.locator('.calendar-appointment-details')
+    .getByRole('button', { name: 'Reschedule', exact: true }).click()
+
+  const availableSlots = calendar.locator('.calendar-availability .calendar-time-card.is-available')
+  await expect(calendar.locator('.calendar-reschedule-prompt')).toContainText('Current appointment')
+  await expect(availableSlots).toHaveCount(2)
+  await availableSlots.first().click()
+  await calendar.getByRole('button', { name: 'Confirm reschedule', exact: true }).click()
+
+  await expect(calendar.getByRole('status').filter({ hasText: 'Your appointment has been rescheduled.' })).toBeVisible()
+  await expect(calendar.locator('.calendar-appointment-summary').first()).toContainText('9:00')
+  expect(backend.calls.reschedule).toBe(1)
 })
 
 test('patient and staff features remain reachable at responsive widths', async ({ page }) => {
