@@ -36,8 +36,8 @@ const clinics = [
     source_name: null,
     source_url: null,
     source_checked_on: null,
-    latitude: null,
-    longitude: null,
+    latitude: 45.4215,
+    longitude: -75.6972,
     is_active: true,
   },
   {
@@ -55,8 +55,8 @@ const clinics = [
     source_name: null,
     source_url: null,
     source_checked_on: null,
-    latitude: null,
-    longitude: null,
+    latitude: 45.347,
+    longitude: -75.804,
     is_active: true,
   },
 ]
@@ -99,7 +99,7 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
     end_at: `${appointmentDate}T15:30:00.000Z`,
     status: 'booked',
   }]
-  const calls = { book: 0, reschedule: 0, cancel: 0 }
+  const calls = { book: 0, reschedule: 0, cancel: 0, availableSlots: 0, availableDays: 0 }
 
   await page.route('http://127.0.0.1:54321/**', async (route) => {
     const request = route.request()
@@ -186,6 +186,7 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
         return
       }
       if (rpc === 'available_appointment_slots') {
+        calls.availableSlots += 1
         const clinicIdForSlots = body?.p_clinic_id
         const date = body?.p_date
         const slots = clinicIdForSlots === clinicBId && date === appointmentDate
@@ -212,6 +213,7 @@ async function installSupabaseMocks(page: Page, platformAdmin = false) {
         return
       }
       if (rpc === 'available_appointment_days') {
+        calls.availableDays += 1
         const clinicIdForSlots = body?.p_clinic_id
         const startDate = String(body?.p_start_date ?? '')
         const endDate = String(body?.p_end_date ?? '')
@@ -326,6 +328,59 @@ test('guest can see a clinic calendar and book after signing in', async ({ page 
   await expect(page.getByRole('status').filter({ hasText: 'Your appointment is booked.' })).toBeVisible()
   await expect(page.locator('.calendar-appointment-summary').last()).toContainText('Beta Health Clinic')
   expect(backend.calls.book).toBe(1)
+})
+
+test('hard refresh restores the selected clinic and its availability', async ({ page }) => {
+  const backend = await installSupabaseMocks(page)
+  await page.goto('/')
+
+  const clinicCard = page.locator('.clinic-card').filter({ hasText: 'Beta Health Clinic' })
+  await clinicCard.getByRole('button', { name: 'Select clinic', exact: true }).click()
+  const calendar = page.locator('#clinic-booking-calendar')
+  await expect(calendar.locator('.calendar-clinic-context')).toContainText('Beta Health Clinic')
+  await page.getByLabel('Select date').fill(appointmentDate)
+  await expect(calendar.locator('.calendar-availability')).toContainText('2 available appointment times')
+  await expect(calendar.locator('.calendar-time-card.is-available')).toHaveCount(2)
+
+  await page.reload()
+
+  await expect(calendar.locator('.calendar-clinic-context')).toContainText('Beta Health Clinic')
+  await expect(calendar.locator('#calendar-clinic')).toHaveValue(clinicBId)
+  await expect(page.getByLabel('Select date')).toHaveValue(appointmentDate)
+  await expect(calendar.locator('.calendar-availability')).toContainText('2 available appointment times')
+  await expect(calendar.locator('.calendar-time-card.is-available')).toHaveCount(2)
+  expect(backend.calls.availableSlots).toBeGreaterThan(1)
+  expect(backend.calls.availableDays).toBeGreaterThan(1)
+})
+
+test('ClinicFinder toolbar uses a distinct icon and its map shows all clinic results', async ({ page }) => {
+  await installSupabaseMocks(page)
+  await page.goto('/')
+
+  const navigation = (page.viewportSize()?.width ?? 1024) <= 700
+    ? page.locator('.mobile-bottom-navigation')
+    : page.locator('.rail-navigation')
+  const clinicFinderButton = navigation.getByRole('button', { name: 'ClinicFinder', exact: true })
+  const calendarButton = navigation.getByRole('button', { name: 'Calendar', exact: true })
+  await expect(clinicFinderButton).toBeVisible()
+  expect(await clinicFinderButton.locator('svg path').getAttribute('d'))
+    .not.toBe(await calendarButton.locator('svg path').getAttribute('d'))
+  await clinicFinderButton.click()
+  await expect(page.getByRole('heading', { name: 'Find a clinic', exact: true })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Open map', exact: true }).click()
+  const mapDialog = page.locator('.clinic-map-dialog')
+  await expect(mapDialog).toBeVisible()
+  await expect(mapDialog.getByRole('heading', { name: 'Clinic locations', exact: true })).toBeVisible()
+  await expect(mapDialog.locator('.leaflet-marker-icon')).toHaveCount(2)
+  await expect(mapDialog.locator('.clinic-map-result')).toHaveCount(2)
+  await expect(mapDialog.locator('.clinic-map-result').nth(0)).toContainText('Alpha Family Clinic')
+  await expect(mapDialog.locator('.clinic-map-result').nth(1)).toContainText('Beta Health Clinic')
+
+  await mapDialog.locator('.clinic-map-result').nth(1).click()
+  await expect(mapDialog).not.toBeVisible()
+  await expect(page.locator('.clinic-card').filter({ hasText: 'Beta Health Clinic' })
+    .getByRole('button', { name: 'Selected', exact: true })).toBeVisible()
 })
 
 test('patient can find and reschedule an appointment at another clinic', async ({ page }) => {

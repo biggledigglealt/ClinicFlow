@@ -1119,11 +1119,154 @@
   font-size: 0.72rem;
 }
 
-.clinic-map-heading > a {
+.clinic-map-open-button {
   flex: 0 0 auto;
-  color: #2457e6;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font: inherit;
   font-size: 0.78rem;
   font-weight: 700;
+  cursor: pointer;
+}
+
+.clinic-map-open-button:hover,
+.clinic-map-open-button:focus-visible {
+  border-color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.clinic-map-dialog {
+  width: min(940px, calc(100vw - 28px));
+  max-width: none;
+  max-height: min(820px, calc(100dvh - 28px));
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  color: #1e293b;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.32);
+  overflow: hidden;
+}
+
+.clinic-map-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(2px);
+}
+
+.clinic-map-dialog-content {
+  display: grid;
+  height: min(780px, calc(100dvh - 28px));
+  max-height: min(820px, calc(100dvh - 28px));
+  grid-template-rows: auto minmax(240px, 1fr) minmax(120px, 0.8fr);
+  overflow: hidden;
+}
+
+.clinic-map-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.clinic-map-dialog-header h2 {
+  margin: 3px 0 0;
+  font-size: 1.25rem;
+}
+
+.clinic-map-dialog-header .eyebrow {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.clinic-map-dialog-content > .clinic-map-canvas {
+  min-height: 260px;
+  height: 100%;
+}
+
+.clinic-map-dialog-results {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.clinic-map-results-count {
+  margin: 0 0 2px;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.clinic-map-result {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border: 1px solid #dfeaf3;
+  border-radius: 12px;
+  color: #1e293b;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.clinic-map-result:hover,
+.clinic-map-result:focus-visible,
+.clinic-map-result[aria-pressed="true"] {
+  border-color: #60a5fa;
+  background: #eff6ff;
+}
+
+.clinic-map-result-number {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.clinic-map-result-details {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.clinic-map-result-details small {
+  overflow-wrap: anywhere;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.clinic-map-popup-select {
+  min-height: 38px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .clinic-map-canvas {
@@ -1202,6 +1345,12 @@
 }
 
 .clinic-map-panel .leaflet-container {
+  color: #334155;
+  font: inherit;
+  z-index: 0;
+}
+
+.clinic-map-dialog .leaflet-container {
   color: #334155;
   font: inherit;
   z-index: 0;
@@ -2631,6 +2780,55 @@ button.calendar-time-card:focus-visible {
 }
 
 @media (max-width: 700px) {
+  .clinic-map-dialog {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+    border-radius: 14px;
+  }
+
+  .clinic-map-dialog-content {
+    height: calc(100dvh - 20px);
+    max-height: calc(100dvh - 20px);
+    grid-template-rows: auto minmax(220px, 38dvh) minmax(120px, 1fr);
+  }
+
+  .clinic-map-dialog-header {
+    padding: 12px;
+  }
+
+  .clinic-map-dialog-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .clinic-map-dialog-header .secondary-button {
+    min-height: 44px;
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+
+  .clinic-map-dialog-content > .clinic-map-canvas {
+    height: 100%;
+    min-height: 220px;
+  }
+
+  .clinic-map-dialog-results {
+    max-height: none;
+  }
+
+  .clinic-map-heading > div {
+    flex: 1 1 auto;
+  }
+
+  .clinic-map-open-button {
+    padding-inline: 9px;
+    white-space: nowrap;
+  }
+
+  .mobile-nav-link {
+    font-size: clamp(0.55rem, 2.5vw, 0.72rem);
+    white-space: nowrap;
+  }
+
   .mobile-bottom-navigation {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }

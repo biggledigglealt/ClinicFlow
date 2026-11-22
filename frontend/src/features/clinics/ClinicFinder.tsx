@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useLanguage, useTranslate } from '../../lib/i18n'
 import {
   listClinicServiceOptions,
@@ -57,15 +57,10 @@ function sortClinics(clinics: Clinic[], sortBy: SortOption) {
   return sorted
 }
 
-function clinicMapUrl(focusedClinic: Clinic | undefined) {
-  if (focusedClinic?.latitude == null || focusedClinic.longitude == null) return null
-
-  return `https://www.openstreetmap.org/?mlat=${focusedClinic.latitude}&mlon=${focusedClinic.longitude}#map=14/${focusedClinic.latitude}/${focusedClinic.longitude}`
-}
-
 export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderProps) {
   const t = useTranslate()
   const language = useLanguage()
+  const mapDialogRef = useRef<HTMLDialogElement>(null)
   const [clinics, setClinics] = useState<Clinic[]>([])
   const [serviceOptions, setServiceOptions] = useState<string[]>([])
   const [location, setLocation] = useState(defaultSearch.location)
@@ -75,15 +70,22 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
   const [onlyWithAvailability, setOnlyWithAvailability] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('nearest')
   const [isLoading, setIsLoading] = useState(true)
+  const [isMapOpen, setIsMapOpen] = useState(false)
   const [error, setError] = useState('')
   const sortedClinics = useMemo(() => sortClinics(clinics, sortBy), [clinics, sortBy])
-  const selectedMapClinic = sortedClinics.find((clinic) => clinic.id === selectedClinicId)
-  const focusedMapClinic = selectedMapClinic?.latitude != null && selectedMapClinic.longitude != null
-    ? selectedMapClinic
-    : sortedClinics.find((clinic) => clinic.latitude != null && clinic.longitude != null)
-      ?? selectedMapClinic
-      ?? sortedClinics[0]
-  const mapUrl = clinicMapUrl(focusedMapClinic)
+  const mappedClinics = sortedClinics.filter((clinic) => clinic.latitude != null && clinic.longitude != null)
+
+  useEffect(() => {
+    const dialog = mapDialogRef.current
+    if (!dialog) return
+    if (isMapOpen && !dialog.open) dialog.showModal()
+    if (!isMapOpen && dialog.open) dialog.close()
+  }, [isMapOpen])
+
+  function selectClinicFromMap(clinic: Clinic) {
+    setIsMapOpen(false)
+    onSelectClinic(clinic)
+  }
 
   function resetFilters() {
     setLocation(defaultSearch.location)
@@ -265,9 +267,13 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
                 <strong>{t('Map of clinic results')}</strong>
                 <span>{t('Select a pin or clinic to choose a clinic for booking.')}</span>
               </div>
-              {mapUrl && <a href={mapUrl} target="_blank" rel="noreferrer">{t('Open map')}</a>}
+              {mappedClinics.length > 0 && (
+                <button type="button" className="clinic-map-open-button" onClick={() => setIsMapOpen(true)}>
+                  {t('Open map')}
+                </button>
+              )}
             </div>
-            {mapUrl && focusedMapClinic ? (
+            {mappedClinics.length > 0 ? (
               <Suspense fallback={<p className="clinic-map-unavailable" role="status">{t('Loading map…')}</p>}>
                 <ClinicLocationsMap clinics={sortedClinics} selectedClinicId={selectedClinicId} onSelectClinic={onSelectClinic} />
               </Suspense>
@@ -338,6 +344,47 @@ export function ClinicFinder({ selectedClinicId, onSelectClinic }: ClinicFinderP
       ) : (
         <p>{t('No clinics match these search options. Try a larger distance or remove a filter.')}</p>
       )}
+
+      <dialog ref={mapDialogRef} className="clinic-map-dialog" aria-labelledby="clinic-map-dialog-title"
+        onClose={() => setIsMapOpen(false)}>
+        {isMapOpen && (
+          <div className="clinic-map-dialog-content">
+            <header className="clinic-map-dialog-header">
+              <div>
+                <p className="eyebrow">{t('Clinic search results')}</p>
+                <h2 id="clinic-map-dialog-title">{t('Clinic locations')}</h2>
+              </div>
+              <button type="button" className="secondary-button" onClick={() => setIsMapOpen(false)}>
+                {t('Close map')}
+              </button>
+            </header>
+            <Suspense fallback={<p className="clinic-map-unavailable" role="status">{t('Loading map…')}</p>}>
+              <ClinicLocationsMap clinics={sortedClinics} selectedClinicId={selectedClinicId} onSelectClinic={selectClinicFromMap} />
+            </Suspense>
+            <div className="clinic-map-dialog-results" aria-label={t('Clinic search results')}>
+              <p className="clinic-map-results-count">
+                {t('Showing')} {mappedClinics.length} {t('of')} {sortedClinics.length} {t('clinic locations on the map')}
+              </p>
+              {sortedClinics.map((clinic) => {
+                const index = mappedClinics.findIndex((mappedClinic) => mappedClinic.id === clinic.id)
+                const hasLocation = index !== -1
+                return (
+                  <button type="button" className="clinic-map-result" key={clinic.id}
+                    aria-pressed={clinic.id === selectedClinicId}
+                    onClick={() => selectClinicFromMap(clinic)}>
+                    {hasLocation && <span className="clinic-map-result-number">{index + 1}</span>}
+                    <span className="clinic-map-result-details">
+                      <strong>{clinic.name}</strong>
+                      <small>{[clinic.address, clinic.city, clinic.province].filter(Boolean).join(', ')}</small>
+                      {!hasLocation && <small>{t('Location unavailable on map')}</small>}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </dialog>
     </section>
   )
 }

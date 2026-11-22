@@ -14,6 +14,7 @@ import { useLanguage, useTranslate } from '../../lib/i18n'
 
 type CalendarView = 'month' | 'week' | 'day'
 type CalendarSection = 'calendar' | 'appointments'
+const calendarDateStorageKey = 'clinicflow:calendar-date'
 
 interface CalendarPageProps {
   preferredClinicId: string | null
@@ -34,6 +35,18 @@ function dateInTimeZone(timeZone: string) {
   }).formatToParts(new Date())
   const part = (type: string) => parts.find((item) => item.type === type)?.value ?? ''
   return `${part('year')}-${part('month')}-${part('day')}`
+}
+
+function initialCalendarDate() {
+  const today = dateInTimeZone('America/Toronto')
+  try {
+    if (typeof window === 'undefined') return today
+    const savedDate = window.sessionStorage.getItem(calendarDateStorageKey)
+    if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate) && savedDate >= today) return savedDate
+  } catch {
+    // Use today's date when browser storage is unavailable.
+  }
+  return today
 }
 
 function utcDate(date: string) {
@@ -148,7 +161,7 @@ export function CalendarPage({
   const language = useLanguage()
   const [clinics, setClinics] = useState<CalendarClinic[]>([])
   const [selectedClinicId, setSelectedClinicId] = useState(preferredClinicId ?? '')
-  const [selectedDate, setSelectedDate] = useState(() => dateInTimeZone('America/Toronto'))
+  const [selectedDate, setSelectedDate] = useState(initialCalendarDate)
   const [view, setView] = useState<CalendarView>('month')
   const [activeSection, setActiveSection] = useState<CalendarSection>('calendar')
   const [slots, setSlots] = useState<AppointmentSlot[]>([])
@@ -222,6 +235,14 @@ export function CalendarPage({
 
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(calendarDateStorageKey, selectedDate)
+    } catch {
+      // The selected date remains available in component state for this page session.
+    }
+  }, [selectedDate])
 
   useEffect(() => {
     if (!userId || !hasPatientProfile) return
@@ -693,6 +714,7 @@ export function CalendarPage({
             setReschedulingId(null)
             setMessage('')
           }}>
+          <option value="" disabled>{t('Select a clinic')}</option>
           {clinics.map((clinic) => <option key={clinic.id} value={clinic.id}>{clinic.name}</option>)}
         </select>
 

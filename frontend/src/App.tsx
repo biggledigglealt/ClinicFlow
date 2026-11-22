@@ -36,6 +36,24 @@ function emailDeliveryHint(language: 'en' | 'fr') {
     : 'Mailpit is not available on this hosted preview. If no email arrives, ask the team to check email delivery in Supabase.'
 }
 
+const selectedClinicStorageKey = 'clinicflow:selected-clinic'
+
+function restoreSelectedClinic(): Clinic | null {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const storedClinic = window.localStorage.getItem(selectedClinicStorageKey)
+    if (!storedClinic) return null
+    const clinic = JSON.parse(storedClinic) as Partial<Clinic>
+    if (typeof clinic.id !== 'string' || typeof clinic.name !== 'string' || typeof clinic.time_zone !== 'string') {
+      return null
+    }
+    return clinic as Clinic
+  } catch {
+    return null
+  }
+}
+
 function BellIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="ui-icon"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
 }
@@ -44,9 +62,10 @@ function MenuIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="ui-icon"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
 }
 
-function SectionIcon({ section }: { section: AppSection }) {
-  const paths: Record<AppSection, string> = {
+function SectionIcon({ section }: { section: AppSection | 'clinicFinder' }) {
+  const paths: Record<AppSection | 'clinicFinder', string> = {
     home: 'M3 10.5 12 3l9 7.5M5.5 9v11h13V9M9 20v-6h6v6',
+    clinicFinder: 'M20 10c0 5.5-8 12-8 12S4 15.5 4 10a8 8 0 1 1 16 0ZM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
     calendar: 'M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z',
     profile: 'M20 21a8 8 0 0 0-16 0M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
     settings: 'M12.22 2h-.44a2 2 0 0 0-2 1.72l-.16 1.12a2 2 0 0 1-1 1.55l-.24.14a2 2 0 0 1-1.85.11l-1.01-.44a2 2 0 0 0-2.5.73l-.22.38a2 2 0 0 0 .49 2.57l.85.7a2 2 0 0 1 .69 1.72v.28a2 2 0 0 1-.69 1.72l-.85.7a2 2 0 0 0-.49 2.57l.22.38a2 2 0 0 0 2.5.73l1.01-.44a2 2 0 0 1 1.85.11l.24.14a2 2 0 0 1 1 1.55l.16 1.12a2 2 0 0 0 2 1.72h.44a2 2 0 0 0 2-1.72l.16-1.12a2 2 0 0 1 1-1.55l.24-.14a2 2 0 0 1 1.85-.11l1.01.44a2 2 0 0 0 2.5-.73l.22-.38a2 2 0 0 0-.49-2.57l-.85-.7a2 2 0 0 1-.69-1.72v-.28a2 2 0 0 1 .69-1.72l.85-.7a2 2 0 0 0 .49-2.57l-.22-.38a2 2 0 0 0-2.5-.73l-1.01.44a2 2 0 0 1-1.85-.11l-.24-.14a2 2 0 0 1-1-1.55l-.16-1.12a2 2 0 0 0-2-1.72zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
@@ -71,7 +90,7 @@ function ClinicFlowApp() {
   const [verificationEmail, setVerificationEmail] = useState('')
   const [canResendVerification, setCanResendVerification] = useState(false)
   const [isResendingVerification, setIsResendingVerification] = useState(false)
-  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null)
+  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(() => restoreSelectedClinic())
   const [hasPatientProfile, setHasPatientProfile] = useState(false)
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const [accessibilityPreferences, setAccessibilityPreferences] = useState<AccessibilityPreferences>(defaultAccessibilityPreferences)
@@ -81,6 +100,18 @@ function ClinicFlowApp() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const authPanelRef = useRef<HTMLElement | null>(null)
   const t = (message: string) => translate(message, accessibilityPreferences.language)
+
+  useEffect(() => {
+    try {
+      if (selectedClinic) {
+        window.localStorage.setItem(selectedClinicStorageKey, JSON.stringify(selectedClinic))
+      } else {
+        window.localStorage.removeItem(selectedClinicStorageKey)
+      }
+    } catch {
+      // Storage can be disabled by browser privacy settings; the in-memory selection still works.
+    }
+  }, [selectedClinic])
 
   useEffect(() => {
     if (!showAuth || user) return
@@ -388,7 +419,7 @@ function ClinicFlowApp() {
           </div>
           <nav className="rail-navigation" aria-label={t('Main navigation')}>
             <button type="button" className="rail-link" aria-current={activeSection === 'home' ? 'page' : undefined} onClick={() => navigateTo('home')}><SectionIcon section="home" />{t('Home')}</button>
-            <button type="button" className="rail-link booking-nav-link" onClick={navigateToBooking}><SectionIcon section="calendar" />{t('Book appointment')}</button>
+            <button type="button" className="rail-link booking-nav-link" onClick={navigateToBooking}><SectionIcon section="clinicFinder" />{t('ClinicFinder')}</button>
             <button type="button" className="rail-link" aria-current={activeSection === 'calendar' ? 'page' : undefined} onClick={() => navigateTo('calendar')}><SectionIcon section="calendar" />{t('Calendar')}</button>
             <button type="button" className="rail-link" aria-current={activeSection === 'settings' ? 'page' : undefined} onClick={() => navigateTo('settings')}><SectionIcon section="settings" />{t('Settings')}</button>
             <button type="button" className="rail-link" aria-current={activeSection === 'profile' ? 'page' : undefined} onClick={() => navigateTo('profile')}><SectionIcon section="profile" />{t('Profile')}</button>
@@ -642,7 +673,7 @@ function ClinicFlowApp() {
 
       <nav className="mobile-bottom-navigation" aria-label="Main navigation">
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'home' ? 'page' : undefined} onClick={() => navigateTo('home')}><SectionIcon section="home" />{t('Home')}</button>
-        <button type="button" className="mobile-nav-link booking-nav-link" aria-label={t('Book appointment')} onClick={navigateToBooking}><SectionIcon section="calendar" />{t('Book')}</button>
+        <button type="button" className="mobile-nav-link booking-nav-link" onClick={navigateToBooking}><SectionIcon section="clinicFinder" />{t('ClinicFinder')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'calendar' ? 'page' : undefined} onClick={() => navigateTo('calendar')}><SectionIcon section="calendar" />{t('Calendar')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'profile' ? 'page' : undefined} onClick={() => navigateTo('profile')}><SectionIcon section="profile" />{t('Profile')}</button>
         <button type="button" className="mobile-nav-link" aria-current={activeSection === 'settings' ? 'page' : undefined} onClick={() => navigateTo('settings')}><SectionIcon section="settings" />{t('Settings')}</button>

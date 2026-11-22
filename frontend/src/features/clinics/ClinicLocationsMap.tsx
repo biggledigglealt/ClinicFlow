@@ -62,7 +62,12 @@ export function ClinicLocationsMap({ clinics, selectedClinicId, onSelectClinic }
       popupTitle.textContent = `${index + 1}. ${clinic.name}`
       const popupAddress = document.createElement('div')
       popupAddress.textContent = clinic.address
-      popup.append(popupTitle, popupAddress)
+      const chooseClinic = document.createElement('button')
+      chooseClinic.type = 'button'
+      chooseClinic.className = 'clinic-map-popup-select'
+      chooseClinic.textContent = t('Select clinic')
+      chooseClinic.addEventListener('click', () => onSelectClinic(clinic))
+      popup.append(popupTitle, popupAddress, chooseClinic)
       L.marker([clinic.latitude as number, clinic.longitude as number], {
         icon,
         title: clinic.name,
@@ -70,7 +75,6 @@ export function ClinicLocationsMap({ clinics, selectedClinicId, onSelectClinic }
         keyboard: true,
       })
         .bindPopup(popup)
-        .on('click', () => onSelectClinic(clinic))
         .addTo(pins)
     })
 
@@ -79,7 +83,7 @@ export function ClinicLocationsMap({ clinics, selectedClinicId, onSelectClinic }
     }
     const resizeFrame = window.requestAnimationFrame(() => map.invalidateSize())
     return () => window.cancelAnimationFrame(resizeFrame)
-  }, [clinics, selectedClinicId, onSelectClinic])
+  }, [clinics, selectedClinicId, onSelectClinic, t])
 
   return <div className="clinic-map-canvas" ref={mapElement} role="region" aria-label={t('Map showing all clinic search results')} />
 }
