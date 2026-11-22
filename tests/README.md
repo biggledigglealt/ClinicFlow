@@ -17,7 +17,7 @@ npm run db:test
 npm run db:stop
 ```
 
-The current pgTAP suite plans 66 assertions in `supabase/tests/database/rls.test.sql`. It covers synthetic clinic provenance and search filters, patient/staff access boundaries, booking and overlap protection, waitlist acceptance, schedule interval rules, trusted staff provisioning, selected audit events, notification outbox behavior, and appointment-duration-aware search.
+The current pgTAP suite plans 68 assertions in `supabase/tests/database/rls.test.sql`. It covers synthetic clinic provenance and search filters, patient/staff access boundaries, booking and reschedule behavior, overlap protection, waitlist acceptance, schedule interval rules, trusted staff provisioning, selected audit events, notification outbox behavior, and appointment-duration-aware search.
 
 These are database integration checks, not browser end-to-end tests. They do not establish safe behavior under truly concurrent live requests, verify a hosted Supabase project's configuration, test hosted email delivery, or certify privacy/security. Those need separate checks in the intended environment.
 

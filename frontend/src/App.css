@@ -1162,6 +1162,7 @@
 .clinic-results-list-panel {
   display: grid;
   min-width: 0;
+  container-type: inline-size;
   align-content: start;
   gap: 10px;
   padding: 12px;
@@ -1345,6 +1346,23 @@
 .clinic-select-button[aria-pressed='true'] {
   color: #fff;
   background: #1d4ed8;
+}
+
+@container (max-width: 430px) {
+  .clinic-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .clinic-card-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .clinic-select-button {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 
 .availability-search {
@@ -1976,14 +1994,27 @@ button.calendar-time-card:focus-visible {
 }
 
 .calendar-booking-action {
+  position: sticky;
+  top: 10px;
+  z-index: 3;
   display: grid;
   gap: 8px;
-  margin-top: 14px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(30, 58, 138, 0.1);
 }
 
 .calendar-booking-action p {
   margin: 0;
   color: #52657e;
+  font-size: 0.78rem;
+}
+
+.calendar-booking-action .auth-error,
+.calendar-booking-action .auth-message {
   font-size: 0.78rem;
 }
 

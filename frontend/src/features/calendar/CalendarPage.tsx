@@ -430,7 +430,7 @@ export function CalendarPage({
           <h2 id="calendar-day-title">{formatLongDate(selectedDate, language)}</h2>
           {reschedulingId ? (
             <div className="calendar-reschedule-prompt" role="status">
-              <p>{t('Choose an available time to reschedule.')}</p>
+              <p>{t('Select an available time below. The confirmation button will appear here and stay visible.')}</p>
               <button type="button" className="text-button" disabled={busy} onClick={cancelRescheduling}>{t('Cancel rescheduling')}</button>
             </div>
           ) : <p>{t('Choose an available time')}</p>}
@@ -450,8 +450,21 @@ export function CalendarPage({
           {clinics.map((clinic) => <option key={clinic.id} value={clinic.id}>{clinic.name}</option>)}
         </select>
 
-        {error && <p className="auth-error" role="alert">{t(error)}</p>}
-        {message && <p className="auth-message" role="status">{message}</p>}
+        {(selectedSlot || error || message) && (
+          <div className="calendar-booking-action" aria-live="polite">
+            {error && <p className="auth-error" role="alert">{t(error)}</p>}
+            {message && <p className="auth-message" role="status">{message}</p>}
+            {selectedSlot && <p>
+              {t(reschedulingId ? 'Selected new time:' : 'Selected time:')}{' '}
+              {formatClock(selectedSlot.start_at, selectedClinic?.time_zone ?? 'America/Toronto', language)}
+            </p>}
+            {selectedSlot && (
+              <button type="button" className="primary-button" disabled={busy} onClick={() => void confirmSelection()}>
+                {busy ? t(reschedulingId ? 'Rescheduling…' : 'Booking…') : t(reschedulingId ? 'Confirm reschedule' : 'Confirm booking')}
+              </button>
+            )}
+          </div>
+        )}
 
         {!selectedClinic && !isLoadingClinics && <p className="section-description">{t('No clinics are available.')}</p>}
         {isLoadingClinics && <p className="section-description" role="status">{t('Loading clinics…')}</p>}
@@ -531,9 +544,15 @@ export function CalendarPage({
                           className={'calendar-time-card is-available'
                             + (selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}` ? ' is-slot-selected' : '')}
                           aria-pressed={selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}`}
-                          onClick={() => { setSelectedSlotKey(`${row.slot.staff_id}:${row.slot.start_at}`); setMessage('') }}>
+                          onClick={() => {
+                            setSelectedSlotKey(`${row.slot.staff_id}:${row.slot.start_at}`)
+                            setError('')
+                            setMessage('')
+                          }}>
                           <strong>{formatClock(row.slot.start_at, selectedClinic.time_zone, language)}</strong>
-                          <span>{selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}` ? t('Selected') : t('Available')}</span>
+                          <span>{selectedSlotKey === `${row.slot.staff_id}:${row.slot.start_at}`
+                            ? t('Selected')
+                            : t(reschedulingId ? 'Select to reschedule' : 'Select time')}</span>
                         </button>
                       )
                     })}
@@ -541,14 +560,6 @@ export function CalendarPage({
                 </section>
               )
             })}
-            {selectedSlot && (
-              <div className="calendar-booking-action">
-                {reschedulingId && <p>{t('Rescheduling appointment')}</p>}
-                <button type="button" className="primary-button" disabled={busy} onClick={() => void confirmSelection()}>
-                  {busy ? t(reschedulingId ? 'Rescheduling…' : 'Booking…') : t(reschedulingId ? 'Confirm reschedule' : 'Confirm booking')}
-                </button>
-              </div>
-            )}
           </>
         )}
       </aside>
