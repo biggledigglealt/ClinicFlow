@@ -13,7 +13,9 @@ export const isSupabaseConfigured = Boolean(
   supabaseUrl && supabasePublishableKey && !hasPlaceholderUrl && !hasPlaceholderKey,
 )
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey || 'not-configured')
+export const supabase = createClient(supabaseUrl, supabasePublishableKey || 'not-configured', {
+  auth: { flowType: 'pkce' },
+})
 
 export function getLocalEmailPreviewUrl() {
   const hostname = window.location.hostname
