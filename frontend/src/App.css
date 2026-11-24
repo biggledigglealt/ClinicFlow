@@ -152,6 +152,11 @@
   min-width: 0;
 }
 
+.app-main {
+  container-name: app-main;
+  container-type: inline-size;
+}
+
 .main-content {
   display: grid;
   gap: 20px;
@@ -320,6 +325,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
   min-width: 0;
 }
@@ -447,13 +453,23 @@
 }
 
 .topbar {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px 24px;
   padding: 20px 24px;
   margin-bottom: 20px;
+}
+
+@container app-main (max-width: 1120px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .topbar-actions {
+    justify-content: flex-start;
+  }
 }
 
 .unread-badge {
@@ -560,7 +576,7 @@
 }
 
 .account-menu-email {
-  max-width: 190px;
+  max-width: min(420px, 30vw);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2792,15 +2808,10 @@ button.calendar-time-card:focus-visible {
   }
 
   .topbar {
-    flex-wrap: wrap;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     padding: 15px;
     margin-bottom: 16px;
-  }
-
-  .topbar-heading,
-  .topbar-actions {
-    flex: 1 1 100%;
   }
 
   .topbar h1 {
