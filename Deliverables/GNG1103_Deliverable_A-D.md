@@ -2128,7 +2128,7 @@ University of Ottawa
 
 [2.1 Empathy process	3](#empathy-process)
 
-[2.2 Raw user data \- Shyaan \- RESEARCH_FORM_LINK_REMOVED	4](#raw-user-data)
+[research form link omitted]
 
 [3 Needs and Design Criteria	5](#needs-and-design-criteria)
 
@@ -2190,7 +2190,7 @@ The initial client Q\&A raised several assumptions that still need field validat
 
 2. ## **Raw user data**
 
-Questions \- [RESEARCH_FORM_LINK_REMOVED)  
+Questions \- [research form link omitted]
 Notes & Observations:
 
 ### **What is the most difficult part of booking appointments?**
@@ -2666,7 +2666,7 @@ Global UI(Alex Mou)
 
 Power point link 
 
-[SHARED_DOCUMENT_LINK_REMOVED)
+[shared document link omitted]
 
 **Project Deliverable Report Instructions**  
 This document is a template for project deliverable submissions. Your group will edit a similar document for every deliverable in the course as you develop more aspects of the design process. Some elements will be repeated across deliverables. In most cases, you can copy and paste from a previous deliverable, making sure to update the text as necessary. See each deliverable’s instructions for further information.
@@ -2765,7 +2765,7 @@ All in all, document stores are much faster and if your data doesn't have relati
 
 Ensure you include all the information required in the BOM template for both the detailed design concept and the low fidelity focused prototypes and testing. Ensure you include in the Test Plan template all the required information about what you plan to test and how you will use your low fidelity focused prototypes for these tests. Provide a discussion on how you developed the information in these templates here. See the deliverable instructions for more details. Don’t forget to include your filled-in templates in this deliverable’s submission.
 
-[TEAM_BOARD_LINK_REMOVED)
+team board URL omitted
 
 - Claude subscription? 
 
@@ -2795,8 +2795,8 @@ Insert your list of references here.
 \[1\] M. Popovska, “EHR software cost in 2026: A complete pricing breakdown,” Pabau, Sep. 25, 2026\. \[Online\]. Available: https\://pabau.com/blog/ehr-software-cost/. \[Accessed: Oct. 4, 2026\].
 
 \[2\] V. Tran, “AI billing software pushed hospital costs up \$942 million with no rise in care,” Yahoo News, Sep. 29, 2026\. \[Online\]. Available: https\://www\.yahoo.com/news/us/articles/ai-billing-software-pushed-hospital-111100239.html. \[Accessed: Oct. 4, 2026\].  
-Excel testplan link [GNG1103\_TestPlan\_Template.xlsx](SHARED_DOCUMENT_LINK_REMOVED)   
-Excel BOM [GNG1103\_BOM template.xlsx](SHARED_DOCUMENT_LINK_REMOVED) 
+Excel testplan link [shared document link omitted]
+Excel BOM [shared document link omitted]
 
 ITP review  
 Development goals should be as specific, actionable, and as quantifiable as possible. After each member presents their development goal, the team should offer strategies to support that member toward goal accomplishment.

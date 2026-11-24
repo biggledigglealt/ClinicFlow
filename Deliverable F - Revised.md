@@ -201,7 +201,7 @@ For this revision, the team corrected the calendar arrow/date-field overlap at c
 
 Remaining tasks are to run and record a controlled two-device Safari session test, repeat the availability and double-booking tests with trial-level data, measure booking and reschedule action counts, check the actual Vercel and Supabase costs, and attach the complete editable BOM and Test Plan workbook. Before submission, the team should refresh the table of contents and page numbers after the report is placed in its final document format.
 
-Trello: [Equilibrium project board](TEAM_BOARD_LINK_REMOVED)
+The project task-board link is omitted from this public copy.
 
 ![][image4]
 

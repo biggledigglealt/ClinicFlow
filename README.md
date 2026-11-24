@@ -3,7 +3,6 @@
 **Find clinics, compare appointment times, and manage schedules in one place.**
 
 [![CI](https://github.com/zixxenK/ClinicFlow/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zixxenK/ClinicFlow/actions/workflows/ci.yml)
-[Open ClinicFlow](HOSTED_PREVIEW_URL_REMOVED)
 
 ClinicFlow is a responsive web prototype for clinic discovery, appointment booking, and day-to-day scheduling. It supports patient and clinic staff workflows, with a focus on clear availability and simple operations.
 
@@ -19,6 +18,12 @@ ClinicFlow is a responsive web prototype for clinic discovery, appointment booki
 
 ClinicFlow is administrative scheduling software. It is not an electronic medical record and does not provide diagnosis, treatment, or clinical decision support.
 
+## Product preview
+
+![ClinicFlow clinic search on a phone-sized screen](Deliverables/assets/clinicflow-patient-mobile.png)
+
+The screenshot uses synthetic demonstration data. Clinic records are examples, not verified listings.
+
 ## Run locally
 
 Requirements: Node.js 22.12 or newer and Docker Desktop.
@@ -28,11 +33,11 @@ npm run setup
 npm run dev
 ```
 
-Open [http://127.0.0.1:5173](http://127.0.0.1:5173). The startup command starts local Supabase, applies migrations, loads synthetic clinic data, and launches the web app. Keep Docker and the terminal running while you use it.
+Open `http://127.0.0.1:5173`. The startup command starts local Supabase, applies migrations, loads synthetic clinic data, and launches the web app. Keep Docker and the terminal running while you use it.
 
 In GitHub Codespaces, dependencies install during setup. Run `npm run dev`, then open forwarded port `5173`.
 
-Local signup is immediate. Password recovery and appointment emails are captured by Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324); Supabase Studio is at [http://127.0.0.1:54323](http://127.0.0.1:54323).
+Local signup is immediate. Password recovery and appointment emails are captured by Mailpit on port `54324`; Supabase Studio runs on port `54323`.
 
 Stop the local database services with:
 
@@ -61,12 +66,13 @@ Database tests require Docker and local Supabase. They use synthetic accounts an
 
 ## Project documentation
 
+- [Design Day pitch and Q&A](docs/design-day-pitch.md)
 - [Team onboarding](docs/TEAM_ONBOARDING.md)
 - [System overview](docs/subsystem-overview.md)
 - [Clinic listing verification and import](docs/clinic-listing-verification.md)
 - [Notification delivery](docs/notifications.md)
 - [Database and access model](backend/README.md)
 
-## Deployment configuration
+## Data and configuration
 
-The frontend build expects `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Only use a publishable key in frontend configuration; never put a Supabase secret or service-role key in a `VITE_` variable. Local development configures its own local Supabase connection. Do not use real information with hosted deployments until their database, authentication, and access settings have been reviewed.
+Local development configures Supabase automatically. The repository contains no hosted project URL or credentials. Use synthetic records only; do not connect real patient data to this prototype.

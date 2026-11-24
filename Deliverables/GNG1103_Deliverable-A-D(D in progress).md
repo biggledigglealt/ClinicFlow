@@ -2128,7 +2128,7 @@ University of Ottawa
 
 [2.1 Empathy process	3](#empathy-process)
 
-[2.2 Raw user data \- Shyaan \- RESEARCH_FORM_LINK_REMOVED	4](#raw-user-data)
+[research form link omitted]
 
 [3 Needs and Design Criteria	5](#needs-and-design-criteria)
 
@@ -2190,7 +2190,7 @@ The initial client Q\&A raised several assumptions that still need field validat
 
 2. ## **Raw user data**
 
-Questions \- [RESEARCH_FORM_LINK_REMOVED)  
+Questions \- [research form link omitted]
 Notes & Observations:
 
 ### **What is the most difficult part of booking appointments?**
@@ -2666,7 +2666,7 @@ Global UI(Alex Mou)
 
 Power point link 
 
-[SHARED_DOCUMENT_LINK_REMOVED)
+[shared document link omitted]
 
 GNG1103
 
@@ -2819,7 +2819,7 @@ Clinic working times, length of appointment, unavailable times, patient booking/
 **4 Bill of Materials (BOM) and Test Plan**  
 Ensure you include all the information required in the BOM template for both the detailed design concept and the low fidelity focused prototypes and testing. Ensure you include in the Test Plan template all the required information about what you plan to test and how you will use your low fidelity focused prototypes for these tests. Provide a discussion on how you developed the information in these templates here. See the deliverable instructions for more details. Don’t forget to include your filled-in templates in this deliverable’s submission.
 
-[TEAM_BOARD_LINK_REMOVED)
+team board URL omitted
 
 - Claude subscription
 
@@ -2831,7 +2831,7 @@ Since we need to provide a link to our trello board about our tasks we can creat
 
 Provide a link to your Trello board or TA approved alternative here. This should include a list of tasks, duration estimates for each task, and a person identified as responsible for each task. Also include a screenshot of your most up-to-date task list here, along with a discussion of how your project tasks are progressing, problems you have encountered, or any changes in the direction of your project your team has decided on.  
 Our team has divided the prototyping responsibilities among five members.   
-[TEAM_BOARD_LINK_REMOVED)
+team board URL omitted
 
 <a id="conclusions-1"></a>
 
@@ -2854,8 +2854,8 @@ Provide a link to your Trello board or TA approved alternative here. This should
 - List at least 3 tasks for self on trello give a due date (reasonable) for your given subtask  
   - Alex and Shyaan please collaborate on UI
 
-Excel testplan link [GNG1103\_TestPlan\_Template.xlsx](SHARED_DOCUMENT_LINK_REMOVED)   
-Excel BOM [GNG1103\_BOM template.xlsx](SHARED_DOCUMENT_LINK_REMOVED)   
+Excel testplan link [shared document link omitted]
+Excel BOM [shared document link omitted]
 Github: [https\://github.com/codespaces/new?repo=zixxenK/ClinicFlow\&ref=main](https://github.com/codespaces/new?repo=zixxenK/ClinicFlow&ref=main)  
 [REDACTED: The copied Supabase CLI login, link, and migration transcript contained authentication material. It reported a hosted migration push; confirm current remote state with the project owner, revoke exposed CLI access, and rotate the database password before use.]
 
